@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
+import { categories, getCategoryQuizCounts } from "@/lib/quizzes";
 import {
   StartIcon,
   ArtIcon,
@@ -19,42 +20,59 @@ type Item = {
   label: string;
   href: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  count?: number;
 };
+
+const CATEGORY_ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+  "art-and-literature": ArtIcon,
+  entertainment: EntertainmentIcon,
+  geography: GeographyIcon,
+  history: HistoryIcon,
+  languages: LanguagesIcon,
+  "science-and-nature": ScienceIcon,
+  sports: SportsIcon,
+  trivia: TriviaIcon,
+};
+
+const categoryCounts = getCategoryQuizCounts();
 
 const items: Item[] = [
   { label: "Start", href: "/", Icon: StartIcon },
-  { label: "Art & Literature", href: "/art-and-literature", Icon: ArtIcon },
-  { label: "Entertainment", href: "/entertainment", Icon: EntertainmentIcon },
-  { label: "Geography", href: "/geography", Icon: GeographyIcon },
-  { label: "History", href: "/history", Icon: HistoryIcon },
-  { label: "Languages", href: "/languages", Icon: LanguagesIcon },
-  { label: "Science & Nature", href: "/science-and-nature", Icon: ScienceIcon },
-  { label: "Sports", href: "/sports", Icon: SportsIcon },
-  { label: "Trivia", href: "/trivia", Icon: TriviaIcon },
+  ...categories.map((c) => ({
+    label: c.name,
+    href: `/${c.slug}`,
+    Icon: CATEGORY_ICONS[c.slug] ?? TriviaIcon,
+    count: categoryCounts[c.slug],
+  })),
 ];
 
 export default function CategoryNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-full">
+    <nav className="w-full" aria-label="Quiz categories">
       <ul className="flex flex-row flex-wrap items-stretch justify-between gap-1 md:gap-2">
-        {items.map(({ label, href, Icon }) => {
+        {items.map(({ label, href, Icon, count }) => {
           const active = href === "/" ? pathname === "/" : pathname === href;
           return (
-            <li key={label} className="flex-1">
+            <li key={href} className="min-w-[4.5rem] flex-1">
               <Link
                 href={href}
-                className="group flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-center"
+                className="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-center"
               >
                 <Icon className="h-6 w-6 text-ink md:h-8 md:w-8" />
                 <span
-                  className={`text-[11px] font-bold leading-tight transition-opacity md:text-xs ${
+                  className={`text-[10px] font-bold leading-tight transition-opacity md:text-[11px] ${
                     active ? "opacity-100" : "opacity-60 group-hover:opacity-100"
                   }`}
                 >
                   {label}
                 </span>
+                {count !== undefined && (
+                  <span className="text-[9px] font-extrabold tabular-nums text-ink/40 md:text-[10px]">
+                    {count} {count === 1 ? "quiz" : "quizzes"}
+                  </span>
+                )}
                 <span
                   className={`hidden h-1 w-full rounded-full bg-ink transition-opacity md:block ${
                     active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
