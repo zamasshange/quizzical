@@ -5,6 +5,7 @@ import Link from "next/link";
 import Button3D from "./Button3D";
 import RevealCard from "./RevealCard";
 import MobileRevealBar from "./MobileRevealBar";
+import QuizStageImage from "./QuizStageImage";
 import { playClick, useGameSounds, useQuizFinishSound } from "@/lib/sound";
 import {
   getExcluded,
@@ -14,7 +15,6 @@ import {
 } from "@/lib/playHistory";
 import type { GameMode } from "@/lib/imageQuestions";
 import {
-  optimizeQuizImageUrl,
   prefetchImages,
   prefetchUpcoming,
 } from "@/lib/quizImageUrl";
@@ -420,11 +420,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   const revealed = phase === "reveal";
   const showReveal = revealed && !!question.reveal_image_url;
-  const displaySrc = optimizeQuizImageUrl(
-    showReveal
-      ? (question.reveal_image_url as string)
-      : question.image_url,
-  );
+  const stageSrc = showReveal
+    ? (question.reveal_image_url as string)
+    : question.image_url;
   const isMovieMode = mode.category === "Movie";
   const lowTime = timeLeft <= Math.max(3, Math.floor(timerSeconds * 0.25));
   const timerFrac = Math.max(0, timeLeft / timerSeconds);
@@ -524,14 +522,13 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
               : "aspect-[16/10]"
           }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={`${question.id}-${showReveal ? "reveal" : "main"}`}
-            src={displaySrc}
+          <QuizStageImage
+            src={stageSrc}
             alt={showReveal ? "Answer reveal" : "Guess from this image"}
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
+            imageKey={`${question.id}-${showReveal ? "reveal" : "main"}`}
+            refreshTerm={
+              showReveal ? undefined : question.answers[question.correct]
+            }
             className={`animate-quiz-pop relative h-full w-full ${
               isMovieMode && !showReveal
                 ? "scale-105 object-cover object-center"

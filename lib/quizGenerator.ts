@@ -13,7 +13,11 @@ import { fetchWikipediaSummary } from "./wikipedia";
 import { fetchMovieData, isTmdbPosterImageUrl } from "./tmdb";
 import { getCachedQuiz, saveCachedQuiz, getCachedByCategory } from "./quizCache";
 import { getCandidatePool, saveCandidatePool } from "./candidateCache";
-import { optimizeQuizImageUrl } from "./quizImageUrl";
+import {
+  isAllowedQuizImageUrl,
+  normalizeImageUrl,
+  optimizeQuizImageUrl,
+} from "./quizImageUrl";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
@@ -453,7 +457,7 @@ async function generateForEntry(
     description = summary.description;
   }
 
-  if (!image_url) return null;
+  if (!image_url?.trim() || !isAllowedQuizImageUrl(image_url)) return null;
 
   const wrong_answers = decoysFor(entry.label);
 
@@ -497,6 +501,7 @@ export async function generateImageQuizBatch(
   const cachedRows = shuffle(await getCachedByCategory(category));
   for (const row of cachedRows) {
     if (results.length >= count) break;
+    if (!row.image_url?.trim() || !isAllowedQuizImageUrl(row.image_url)) continue;
     const answerKey = row.correct_answer.toLowerCase();
     if (usedAnswer.has(answerKey) || usedImage.has(row.image_url)) continue;
     usedAnswer.add(answerKey);

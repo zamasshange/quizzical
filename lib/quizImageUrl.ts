@@ -1,31 +1,74 @@
 /** Smaller/faster image URLs for in-quiz display (Wikipedia + TMDB). */
 
-const WIKI_THUMB_PX = 480;
+const WIKI_MAX_PX = 480;
 const TMDB_QUIZ_BACKDROP = "w780";
 const TMDB_QUIZ_POSTER = "w342";
 
-export function optimizeQuizImageUrl(url: string): string {
-  if (!url) return url;
+const ALLOWED_IMAGE_HOSTS = [
+  "upload.wikimedia.org",
+  "image.tmdb.org",
+  "flagcdn.com",
+];
 
-  if (url.includes("upload.wikimedia.org")) {
-    if (url.includes("/thumb/")) {
-      return url.replace(/\/(\d+)px-/g, `/${WIKI_THUMB_PX}px-`);
-    }
-    return url;
+export function normalizeImageUrl(url: string): string {
+  const trimmed = url?.trim() ?? "";
+  if (!trimmed) return "";
+  return trimmed.replace(/^http:\/\//i, "https://");
+}
+
+export function isAllowedQuizImageUrl(url: string): boolean {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized.startsWith("https://")) return false;
+  try {
+    const host = new URL(normalized).hostname;
+    return ALLOWED_IMAGE_HOSTS.some(
+      (h) => host === h || host.endsWith(`.${h}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Downscale Wikipedia thumbs only — never rewrite to a larger size (avoids 404s). */
+export function optimizeQuizImageUrl(url: string): string {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return "";
+
+  if (normalized.includes("upload.wikimedia.org") && normalized.includes("/thumb/")) {
+    return normalized.replace(/\/(\d+)px-/g, (_match, px: string) => {
+      const current = parseInt(px, 10);
+      const target = Number.isFinite(current)
+        ? Math.min(current, WIKI_MAX_PX)
+        : WIKI_MAX_PX;
+      return `/${target}px-`;
+    });
   }
 
-  if (url.includes("image.tmdb.org")) {
-    return url
+  if (normalized.includes("image.tmdb.org")) {
+    return normalized
       .replace("/w1280/", `/${TMDB_QUIZ_BACKDROP}/`)
       .replace("/w500/", `/${TMDB_QUIZ_POSTER}/`);
   }
 
-  return url;
+  return normalized;
+}
+
+/** Same-origin proxy — reliable on production when hotlink/referrer rules block direct loads. */
+export function proxiedQuizImageUrl(url: string): string {
+  const optimized = optimizeQuizImageUrl(url);
+  if (!optimized || !isAllowedQuizImageUrl(optimized)) return optimized;
+  return `/api/img?u=${encodeURIComponent(optimized)}`;
 }
 
 /** Browser-side preload — resolves when all URLs have loaded or failed. */
 export function prefetchImages(urls: string[]): Promise<void> {
-  const unique = [...new Set(urls.map((u) => optimizeQuizImageUrl(u)).filter(Boolean))];
+  const unique = [
+    ...new Set(
+      urls
+        .map((u) => proxiedQuizImageUrl(u))
+        .filter((u) => u.length > 0),
+    ),
+  ];
   if (unique.length === 0) return Promise.resolve();
 
   return Promise.all(
@@ -33,6 +76,7 @@ export function prefetchImages(urls: string[]): Promise<void> {
       (src) =>
         new Promise<void>((resolve) => {
           const img = new Image();
+          img.referrerPolicy = "no-referrer";
           img.onload = () => resolve();
           img.onerror = () => resolve();
           img.src = src;
@@ -52,4 +96,21 @@ export function prefetchUpcoming(
     [q.image_url, q.reveal_image_url].filter((u): u is string => !!u),
   );
   void prefetchImages(urls);
+}
+
+export function quizImageFallbacks(url: string): string[] {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return [];
+
+  const optimized = optimizeQuizImageUrl(normalized);
+  return [
+    ...new Set(
+      [
+        proxiedQuizImageUrl(normalized),
+        normalized !== optimized ? proxiedQuizImageUrl(optimized) : "",
+        normalized,
+        optimized !== normalized ? optimized : "",
+      ].filter(Boolean),
+    ),
+  ];
 }
