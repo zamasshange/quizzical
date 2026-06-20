@@ -76,14 +76,30 @@ export default function Footer() {
             Account
           </p>
           <ul className="mt-3 flex flex-col gap-2">
-            <li>
-              <Link
-                href="/signup"
-                className="text-sm font-bold text-ink/60 transition-colors hover:text-ink"
-              >
-                Sign Up
-              </Link>
-            </li>
+          <li>
+            <Link
+              href="/profile"
+              className="text-sm font-bold text-ink/60 transition-colors hover:text-ink"
+            >
+              My Games
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/leaderboard"
+              className="text-sm font-bold text-ink/60 transition-colors hover:text-ink"
+            >
+              Leaderboard
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/signup"
+              className="text-sm font-bold text-ink/60 transition-colors hover:text-ink"
+            >
+              Sign Up
+            </Link>
+          </li>
             <li>
               <Link
                 href="/signin"

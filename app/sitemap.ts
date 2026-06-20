@@ -52,10 +52,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.65,
     },
     {
-      url: absoluteUrl("/status"),
+      url: absoluteUrl("/leaderboard"),
       lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.6,
+      changeFrequency: "daily",
+      priority: 0.7,
     },
   ];
 

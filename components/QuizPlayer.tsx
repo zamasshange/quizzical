@@ -2,9 +2,10 @@
 
 
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import type { Quiz } from "@/lib/quizzes";
 import { usesAnswerImages, usesQuestionImages } from "@/lib/quizzes";
@@ -23,6 +24,18 @@ import {
   recordSeen,
   rotateExcluded,
 } from "@/lib/playHistory";
+
+import {
+  clearGameSession,
+  gameKeyText,
+  getGameSession,
+  saveGameSession,
+  type SavedGameSession,
+} from "@/lib/gameProgress";
+import { useCompleteGame } from "@/lib/completeGame";
+import ContinueGamePrompt from "./ContinueGamePrompt";
+import GameHudControls from "./GameHudControls";
+import GamePauseOverlay from "./GamePauseOverlay";
 
 import Button3D from "./Button3D";
 
@@ -132,7 +145,18 @@ export default function QuizPlayer({
 
   const finalBackLabel = backLabel ?? "Back to quiz";
 
+  const router = useRouter();
+  const completeGame = useCompleteGame();
+  const gKey = gameKeyText(quiz.id);
+  const canResume = !isFlagsQuiz(quiz.id);
+  const finishedRef = useRef(false);
+
   const [ready, setReady] = useState(false);
+  const [pendingResume, setPendingResume] = useState<SavedGameSession | null>(
+    null,
+  );
+  const [declinedResume, setDeclinedResume] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [session, setSession] = useState<ReturnType<typeof initSession> | null>(
     null,
   );
@@ -164,6 +188,14 @@ export default function QuizPlayer({
   useQuizFinishSound(phase, correctCount, questions.length);
 
   useEffect(() => {
+    if (!canResume) return;
+    const saved = getGameSession(gKey);
+    if (saved?.questionIds?.length) setPendingResume(saved);
+  }, [canResume, gKey]);
+
+  useEffect(() => {
+    if (pendingResume && !declinedResume) return;
+
     const next = initSession(quiz, prefetchedImages);
     setSession(next);
     setQuestions(next.questions);
@@ -172,7 +204,96 @@ export default function QuizPlayer({
       recordSeen(historyKey, { ids: next.questions.map((q) => q.id) });
     }
     setReady(true);
-  }, [quiz, prefetchedImages, historyKey]);
+  }, [quiz, prefetchedImages, historyKey, pendingResume, declinedResume]);
+
+  useEffect(() => {
+    if (!ready || !canResume || phase === "finished" || pendingResume) return;
+    saveGameSession({
+      gameKey: gKey,
+      gameType: "text",
+      quizId: quiz.id,
+      title: quiz.title,
+      emoji: quiz.emoji,
+      href: `/quiz/${quiz.id}/play`,
+      index,
+      phase,
+      score,
+      correctCount,
+      timeLeft,
+      selected,
+      questionIds: questions.map((q) => q.id),
+      updatedAt: Date.now(),
+    });
+  }, [
+    ready,
+    canResume,
+    phase,
+    pendingResume,
+    gKey,
+    quiz.id,
+    quiz.title,
+    quiz.emoji,
+    index,
+    score,
+    correctCount,
+    timeLeft,
+    selected,
+    questions,
+  ]);
+
+  useEffect(() => {
+    if (phase !== "finished" || finishedRef.current) return;
+    finishedRef.current = true;
+    void completeGame({
+      gameKey: gKey,
+      gameType: "text",
+      quizId: quiz.id,
+      title: quiz.title,
+      emoji: quiz.emoji,
+      href: `/quiz/${quiz.id}/play`,
+      score,
+      correct: correctCount,
+      total: questions.length,
+    });
+  }, [
+    phase,
+    completeGame,
+    gKey,
+    quiz.id,
+    quiz.title,
+    quiz.emoji,
+    score,
+    correctCount,
+    questions.length,
+  ]);
+
+  function applyResume(saved: SavedGameSession) {
+    const ordered = (saved.questionIds ?? [])
+      .map((id) => quiz.questions.find((q) => q.id === id))
+      .filter((q): q is (typeof quiz.questions)[number] => !!q);
+    if (ordered.length === 0) {
+      setDeclinedResume(true);
+      setPendingResume(null);
+      return;
+    }
+    setSession({
+      flagsQuiz: false,
+      questions: ordered,
+      firstImageUrl: getPrefetchedImage(
+        prefetchedImages,
+        ordered[saved.index]?.imageQuery,
+      ),
+    });
+    setQuestions(ordered);
+    setIndex(saved.index);
+    setPhase(saved.phase);
+    setScore(saved.score);
+    setCorrectCount(saved.correctCount);
+    setTimeLeft(saved.timeLeft);
+    setSelected(saved.selected);
+    setPendingResume(null);
+    setReady(true);
+  }
 
 
 
@@ -413,7 +534,7 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (!ready || phase !== "playing") return;
+    if (!ready || phase !== "playing" || paused) return;
 
     if (timeLeft <= 0) {
 
@@ -427,7 +548,7 @@ export default function QuizPlayer({
 
     return () => clearTimeout(t);
 
-  }, [ready, phase, timeLeft, lockAnswer]);
+  }, [ready, phase, timeLeft, lockAnswer, paused]);
 
 
 
@@ -454,6 +575,9 @@ export default function QuizPlayer({
 
 
   function restart() {
+    finishedRef.current = false;
+    clearGameSession(gKey);
+    setPaused(false);
     if (flagsQuiz) {
       const next = generateFlagQuestions(FLAGS_PER_ROUND);
       setQuestions(next);
@@ -476,6 +600,22 @@ export default function QuizPlayer({
   }
 
 
+
+  if (pendingResume && !declinedResume) {
+    return (
+      <ContinueGamePrompt
+        title={pendingResume.title}
+        emoji={pendingResume.emoji}
+        progress={`Question ${pendingResume.index + 1} · ${pendingResume.score.toLocaleString()} pts saved`}
+        onContinue={() => applyResume(pendingResume)}
+        onFresh={() => {
+          clearGameSession(gKey);
+          setPendingResume(null);
+          setDeclinedResume(true);
+        }}
+      />
+    );
+  }
 
   if (!ready || !question) {
     return (
@@ -569,6 +709,12 @@ export default function QuizPlayer({
           <Button3D variant="grass" size="lg" onClick={restart}>
 
             Play again
+
+          </Button3D>
+
+          <Button3D variant="white" size="lg" href="/leaderboard">
+
+            Leaderboard
 
           </Button3D>
 
@@ -715,17 +861,24 @@ export default function QuizPlayer({
 
       <div className="flex items-center justify-between gap-4">
 
-        <Link
+        <div className="flex items-center gap-2">
+          <GameHudControls
+            paused={paused}
+            disabled={phase !== "playing"}
+            onTogglePause={() => setPaused((p) => !p)}
+          />
+          <Link
 
-          href={finalBackHref}
+            href={finalBackHref}
 
-          className="text-sm font-bold text-ink/50 hover:text-ink"
+            className="text-sm font-bold text-ink/50 hover:text-ink"
 
-        >
+          >
 
-          ✕ Quit
+            ✕ Quit
 
-        </Link>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-2 text-sm font-extrabold">
 
@@ -1030,6 +1183,16 @@ export default function QuizPlayer({
               ? question.answers[question.correct]
               : undefined
           }
+        />
+      )}
+
+      {paused && (
+        <GamePauseOverlay
+          onResume={() => setPaused(false)}
+          onQuit={() => {
+            setPaused(false);
+            router.push(finalBackHref);
+          }}
         />
       )}
 

@@ -3,14 +3,7 @@ import Image from "next/image";
 import { SparkleIcon } from "./icons";
 import NavActions from "./NavActions";
 import NavbarAuth from "./NavbarAuth";
-
-const NAV_LINKS = [
-  { label: "Browse", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Picture games", href: "/#picture-games" },
-  { label: "AI Quiz", href: "/ai" },
-  { label: "Sign Up", href: "/signup" },
-];
+import NavbarLinks from "./NavbarLinks";
 
 export default function Navbar() {
   return (
@@ -34,18 +27,7 @@ export default function Navbar() {
           </Link>
 
           {/* Center nav links — visible from sm up; Sign In always in NavbarAuth on mobile */}
-          <ul className="hidden items-center gap-1 sm:flex">
-            {NAV_LINKS.map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  className="rounded-full px-4 py-2 text-sm font-extrabold text-ink/70 transition-colors hover:bg-black/5 hover:text-ink"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <NavbarLinks />
 
           {/* Right actions */}
           <div className="ml-auto flex items-center gap-2">

@@ -13,6 +13,7 @@ import {
 } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import PictureGameGrid from "@/components/PictureGameGrid";
+import HomeGameHub from "@/components/HomeGameHub";
 import JsonLd from "@/components/JsonLd";
 import { homeMetadata } from "@/lib/seo";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seoStructuredData";
@@ -120,6 +121,8 @@ export default function Home() {
           </div>
           <PictureGameGrid modes={IMAGE_GAME_MODES} />
         </section>
+
+        <HomeGameHub />
 
         {/* Curated quiz rows — full category lists live on /[category] via nav above */}
         {homeRows.map((row) => (

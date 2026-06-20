@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Button3D from "./Button3D";
 import RevealCard from "./RevealCard";
 import MobileRevealBar from "./MobileRevealBar";
@@ -13,6 +14,17 @@ import {
   recordSeen,
   rotateExcluded,
 } from "@/lib/playHistory";
+import {
+  clearGameSession,
+  gameKeyImage,
+  getGameSession,
+  saveGameSession,
+  type SavedGameSession,
+} from "@/lib/gameProgress";
+import { useCompleteGame } from "@/lib/completeGame";
+import ContinueGamePrompt from "./ContinueGamePrompt";
+import GameHudControls from "./GameHudControls";
+import GamePauseOverlay from "./GamePauseOverlay";
 import type { GameMode } from "@/lib/imageQuestions";
 import {
   prefetchImages,
@@ -85,7 +97,16 @@ function prepare(rows: SourceQuestion[]): PreparedQuestion[] {
 }
 
 export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
+  const router = useRouter();
+  const completeGame = useCompleteGame();
+  const finishedRef = useRef(false);
+
   const [status, setStatus] = useState<Status>("setup");
+  const [pendingResume, setPendingResume] = useState<SavedGameSession | null>(
+    null,
+  );
+  const [declinedResume, setDeclinedResume] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
   const [timerSeconds, setTimerSeconds] = useState<TimerSeconds>(DEFAULT_TIMER);
   const [loadProgress, setLoadProgress] = useState("");
@@ -199,14 +220,85 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   useEffect(() => {
     if (status !== "ready") return;
-    if (phase !== "playing") return;
+    if (phase !== "playing" || paused) return;
     if (timeLeft <= 0) {
       lockAnswer(null);
       return;
     }
     const t = setTimeout(() => setTimeLeft((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [status, phase, timeLeft, lockAnswer]);
+  }, [status, phase, timeLeft, lockAnswer, paused]);
+
+  const gKey =
+    status === "ready" || status === "loading"
+      ? gameKeyImage(mode.category, difficulty)
+      : "";
+
+  useEffect(() => {
+    if (status !== "ready" || !gKey) return;
+    if (phase === "finished") return;
+    saveGameSession({
+      gameKey: gKey,
+      gameType: "image",
+      quizId: mode.slug,
+      title: mode.title,
+      emoji: mode.emoji,
+      href: `/play/${mode.slug}`,
+      index,
+      phase,
+      score,
+      correctCount,
+      timeLeft,
+      selected,
+      imageQuestions: questions,
+      difficulty,
+      timerSeconds,
+      updatedAt: Date.now(),
+    });
+  }, [
+    status,
+    gKey,
+    mode.slug,
+    mode.title,
+    mode.emoji,
+    mode.category,
+    index,
+    phase,
+    score,
+    correctCount,
+    timeLeft,
+    selected,
+    questions,
+    difficulty,
+    timerSeconds,
+  ]);
+
+  useEffect(() => {
+    if (phase !== "finished" || finishedRef.current) return;
+    finishedRef.current = true;
+    void completeGame({
+      gameKey: gameKeyImage(mode.category, difficulty),
+      gameType: "image",
+      quizId: mode.slug,
+      title: mode.title,
+      emoji: mode.emoji,
+      href: `/play/${mode.slug}`,
+      score,
+      correct: correctCount,
+      total: questions.length,
+    });
+  }, [
+    phase,
+    completeGame,
+    mode.slug,
+    mode.title,
+    mode.emoji,
+    mode.category,
+    difficulty,
+    score,
+    correctCount,
+    questions.length,
+  ]);
 
   // Keyboard shortcuts: 1-4 / A-D to answer, Enter to advance on reveal.
   useEffect(() => {
@@ -222,6 +314,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       d: 3,
     };
     const onKey = (e: KeyboardEvent) => {
+      if (paused) return;
       const k = e.key.toLowerCase();
       if (phase === "playing" && k in map && map[k] < question.answers.length) {
         lockAnswer(map[k]);
@@ -248,7 +341,57 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   }
 
   function restart() {
+    finishedRef.current = false;
+    clearGameSession(gameKeyImage(mode.category, difficulty));
+    setPaused(false);
     void loadQuestions(difficulty, true);
+  }
+
+  function tryResumeFromSetup() {
+    const key = gameKeyImage(mode.category, difficulty);
+    const saved = getGameSession(key);
+    if (saved?.imageQuestions?.length) {
+      setPendingResume(saved);
+    } else {
+      void loadQuestions(difficulty);
+    }
+  }
+
+  function applyImageResume(saved: SavedGameSession) {
+    const restored = saved.imageQuestions as PreparedQuestion[] | undefined;
+    if (!restored?.length) {
+      setDeclinedResume(true);
+      setPendingResume(null);
+      void loadQuestions(difficulty);
+      return;
+    }
+    setQuestions(restored);
+    setIndex(saved.index);
+    setPhase(saved.phase);
+    setScore(saved.score);
+    setCorrectCount(saved.correctCount);
+    setTimeLeft(saved.timeLeft);
+    setSelected(saved.selected);
+    if (saved.timerSeconds) setTimerSeconds(saved.timerSeconds as TimerSeconds);
+    setPendingResume(null);
+    setStatus("ready");
+    setPhase(saved.phase);
+  }
+
+  if (pendingResume && !declinedResume && status === "setup") {
+    return (
+      <ContinueGamePrompt
+        title={pendingResume.title}
+        emoji={pendingResume.emoji}
+        progress={`Question ${pendingResume.index + 1} · ${pendingResume.score.toLocaleString()} pts saved`}
+        onContinue={() => applyImageResume(pendingResume)}
+        onFresh={() => {
+          clearGameSession(gameKeyImage(mode.category, difficulty));
+          setPendingResume(null);
+          setDeclinedResume(true);
+        }}
+      />
+    );
   }
 
   if (status === "setup") {
@@ -313,7 +456,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         <Button3D
           variant="grass"
           size="lg"
-          onClick={() => loadQuestions(difficulty)}
+          onClick={tryResumeFromSetup}
         >
           ▶ Start
         </Button3D>
@@ -410,6 +553,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           <Button3D variant="white" size="lg" onClick={() => setStatus("setup")}>
             Change settings
           </Button3D>
+          <Button3D variant="white" size="lg" href="/leaderboard">
+            Leaderboard
+          </Button3D>
           <Button3D variant="white" size="lg" href="/">
             Back home
           </Button3D>
@@ -442,6 +588,11 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     >
       {/* HUD — quit, segmented progress, difficulty + score */}
       <div className="flex items-center gap-3">
+        <GameHudControls
+          paused={paused}
+          disabled={phase !== "playing"}
+          onTogglePause={() => setPaused((p) => !p)}
+        />
         <Link
           href="/"
           className="flex h-9 shrink-0 items-center rounded-full border-2 border-ink/15 px-3 text-sm font-extrabold text-ink/50 transition-colors hover:border-ink hover:text-ink"
@@ -664,6 +815,15 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             variant="content"
           />
         </div>
+      )}
+      {paused && (
+        <GamePauseOverlay
+          onResume={() => setPaused(false)}
+          onQuit={() => {
+            setPaused(false);
+            router.push("/");
+          }}
+        />
       )}
     </div>
   );

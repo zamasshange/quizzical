@@ -25,6 +25,8 @@ const isOnboardingBypass = createRouteMatcher([
   "/quiz(.*)",
   "/play(.*)",
   "/ai(.*)",
+  "/profile",
+  "/leaderboard",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
