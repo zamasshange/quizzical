@@ -70,6 +70,28 @@ body {
   }
 }
 
+/* Clerk auth — flush form inside Quizzical shell (no nested card drift) */
+.auth-clerk-shell {
+  width: 100%;
+}
+.auth-clerk-shell > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+}
+.auth-clerk-shell [class*="cl-cardBox"],
+.auth-clerk-shell [class*="cl-card"]:not([class*="cardBox"]) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+  box-shadow: none !important;
+}
+.auth-clerk-shell [class*="cl-card"]:not([class*="cardBox"]) {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
 /* Subtle dotted page background, rendered behind content */
 .bg-quiz-pattern {
   background-image: radial-gradient(var(--color-ink) 1.1px, transparent 1.1px);

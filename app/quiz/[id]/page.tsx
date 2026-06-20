@@ -56,66 +56,70 @@ export default async function QuizOverviewPage(
           ]),
         ]}
       />
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto w-full max-w-3xl min-w-0">
         <div className="overflow-hidden rounded-3xl border-4 border-ink bg-white shadow-[0_6px_0_0_#0d0d0d]">
           <div
-            className="flex flex-col items-center justify-center gap-3 p-10 text-center"
+            className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center sm:gap-3 sm:p-10"
             style={{ backgroundColor: quiz.color }}
           >
-            <span className="text-7xl">{quiz.emoji}</span>
-            <h1 className="font-display text-4xl font-extrabold leading-none text-ink">
+            <span className="text-5xl sm:text-7xl">{quiz.emoji}</span>
+            <h1 className="font-display text-2xl font-extrabold leading-tight text-ink sm:text-3xl md:text-4xl">
               {quiz.title}
             </h1>
             {category && (
-              <span className="rounded-full border-2 border-ink bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide">
+              <span className="rounded-full border-2 border-ink bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide sm:text-xs">
                 {category.name}
               </span>
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-6 p-6 md:p-8">
-            <p className="max-w-md text-center text-lg font-semibold text-ink/70">
+          <div className="flex flex-col items-center gap-5 p-4 sm:gap-6 sm:p-6 md:p-8">
+            <p className="max-w-md text-center text-base font-semibold text-ink/70 sm:text-lg">
               {quiz.description}
             </p>
 
-            <div className="flex items-center gap-6 font-bold text-ink/60">
-              <div className="text-center">
-                <div className="font-display text-2xl text-ink">
+            <div className="grid w-full grid-cols-2 gap-x-3 gap-y-4 font-bold text-ink/60 sm:grid-cols-4 sm:gap-4">
+              <div className="min-w-0 text-center">
+                <div className="font-display text-xl text-ink sm:text-2xl">
                   {questionCount}
                 </div>
-                <div className="text-xs uppercase tracking-wide">Questions</div>
+                <div className="text-[10px] uppercase tracking-wide sm:text-xs">
+                  Questions
+                </div>
               </div>
               {poolNote && (
-                <>
-                  <div className="h-8 w-px bg-ink/20" />
-                  <div className="text-center">
-                    <div className="font-display text-2xl text-ink">
-                      {COUNTRY_COUNT}
-                    </div>
-                    <div className="text-xs uppercase tracking-wide">Countries</div>
+                <div className="min-w-0 text-center">
+                  <div className="font-display text-xl text-ink sm:text-2xl">
+                    {COUNTRY_COUNT}
                   </div>
-                </>
+                  <div className="text-[10px] uppercase tracking-wide sm:text-xs">
+                    Countries
+                  </div>
+                </div>
               )}
-              <div className="h-8 w-px bg-ink/20" />
-              <div className="text-center">
-                <div className="font-display text-2xl text-ink">
+              <div className="min-w-0 text-center">
+                <div className="font-display text-xl text-ink sm:text-2xl">
                   {profile.difficulty}
                 </div>
-                <div className="text-xs uppercase tracking-wide">Difficulty</div>
+                <div className="text-[10px] uppercase tracking-wide sm:text-xs">
+                  Difficulty
+                </div>
               </div>
-              <div className="h-8 w-px bg-ink/20" />
-              <div className="text-center">
-                <div className="font-display text-2xl text-ink">
+              <div className="min-w-0 text-center">
+                <div className="font-display text-xl text-ink sm:text-2xl">
                   {quiz.rating.toFixed(1)}
                 </div>
-                <div className="text-xs uppercase tracking-wide">Rating</div>
+                <div className="text-[10px] uppercase tracking-wide sm:text-xs">
+                  Rating
+                </div>
               </div>
-              <div className="h-8 w-px bg-ink/20" />
-              <div className="text-center">
-                <div className="font-display text-2xl text-ink">
+              <div className="min-w-0 text-center">
+                <div className="font-display text-xl text-ink sm:text-2xl">
                   {quiz.plays.toLocaleString()}
                 </div>
-                <div className="text-xs uppercase tracking-wide">Plays</div>
+                <div className="text-[10px] uppercase tracking-wide sm:text-xs">
+                  Plays
+                </div>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-/** Shared Clerk component appearance — neo-brutalist Quizzical styling. */
+/** Shared Clerk component appearance — flush inside Quizzical auth shell (no nested card). */
 export const clerkAppearance = {
   variables: {
     colorPrimary: "#5b19df",
@@ -11,13 +11,17 @@ export const clerkAppearance = {
     fontFamily: "var(--font-nunito), system-ui, sans-serif",
   },
   elements: {
-    rootBox: "mx-auto flex w-full justify-center",
-    cardBox: "mx-auto w-full max-w-full shadow-none",
-    card: "mx-auto w-full border-0 bg-transparent p-0 shadow-none",
-    main: "mx-auto w-full gap-4",
+    rootBox: "w-full max-w-none",
+    cardBox: "w-full max-w-none shadow-none",
+    card: "w-full max-w-none border-0 bg-transparent p-0 shadow-none",
+    main: "w-full max-w-none gap-4",
     header: "hidden",
-    headerTitle: "font-display text-3xl font-extrabold",
-    headerSubtitle: "font-semibold text-ink/60",
+    headerTitle: "hidden",
+    headerSubtitle: "hidden",
+    footer: "hidden",
+    footerAction: "hidden",
+    footerActionLink: "font-bold text-grass",
+    footerActionText: "text-sm font-bold text-ink/60",
     socialButtonsBlockButton:
       "rounded-full border-4 border-ink bg-white py-2.5 font-extrabold transition-transform hover:-translate-y-0.5",
     socialButtonsBlockButtonText: "font-extrabold",
@@ -28,8 +32,6 @@ export const clerkAppearance = {
       "rounded-xl border-2 border-ink/20 px-3 py-2.5 font-semibold outline-none focus:border-ink",
     formButtonPrimary:
       "rounded-full border-4 border-ink bg-grass py-2.5 font-extrabold text-white shadow-[0_4px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5",
-    footerActionLink: "font-bold text-grass",
-    footerActionText: "text-sm font-bold text-ink/60",
     identityPreviewEditButton: "font-bold text-grass",
   },
 };

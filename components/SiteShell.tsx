@@ -24,7 +24,7 @@ export default function SiteShell({
       <main
         className={`custom-container relative z-10 flex-1 px-4 sm:px-6 md:px-8 lg:px-12 ${
           centerContent
-            ? "flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center py-8 md:min-h-[calc(100dvh-5rem)]"
+            ? "flex min-h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center py-8 md:min-h-[calc(100dvh-5rem)]"
             : "pb-16"
         }`}
       >
