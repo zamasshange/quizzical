@@ -52,6 +52,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.65,
     },
     {
+      url: absoluteUrl("/status"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
       url: absoluteUrl("/leaderboard"),
       lastModified: now,
       changeFrequency: "daily",

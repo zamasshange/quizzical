@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { CATEGORY_PATHS } from "@/lib/categorySlugs";
 import {
   AVATAR_COOKIE_NAME,
   ONBOARDING_COOKIE_NAME,
@@ -19,14 +20,23 @@ const isAuthRoute = createRouteMatcher([
   "/onboarding",
 ]);
 
-// Guest play + API JSON must never redirect to onboarding (breaks fetch/image loads).
+// Guest play + browsing must never redirect to onboarding (breaks fetch/image loads).
 const isOnboardingBypass = createRouteMatcher([
   "/api(.*)",
+  "/__clerk(.*)",
   "/quiz(.*)",
   "/play(.*)",
   "/ai(.*)",
   "/profile",
   "/leaderboard",
+  "/",
+  "/topics(.*)",
+  "/about",
+  "/contact",
+  "/founder",
+  "/privacy-policy",
+  "/status",
+  ...CATEGORY_PATHS,
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

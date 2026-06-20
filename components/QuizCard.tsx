@@ -46,11 +46,15 @@ type Props = {
 export default function QuizCard({ quiz, index = 0 }: Props) {
   const tag = getCategory(quiz.category)?.tag ?? "Trivia quiz";
   const profile = getQuizProfile(quiz);
-  const [thumbUrl, setThumbUrl] = useState<string | null>(
-    () => thumbCache.get(profile.thumbnailTerm) ?? null,
-  );
+  const [thumbUrl, setThumbUrl] = useState<string | null>(() => {
+    const cached = thumbCache.get(profile.thumbnailTerm);
+    return cached !== undefined ? cached : null;
+  });
   const [srcIndex, setSrcIndex] = useState(0);
-  const [showEmoji, setShowEmoji] = useState(true);
+  const [showEmoji, setShowEmoji] = useState(() => {
+    const cached = thumbCache.get(profile.thumbnailTerm);
+    return cached === undefined || !cached;
+  });
   const [hover, setHover] = useState(false);
 
   const thumbSources = thumbUrl ? quizImageFallbacks(thumbUrl) : [];
@@ -58,12 +62,8 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
 
   useEffect(() => {
     const term = profile.thumbnailTerm;
-    if (thumbCache.has(term)) {
-      setThumbUrl(thumbCache.get(term) ?? null);
-      setSrcIndex(0);
-      setShowEmoji(!thumbCache.get(term));
-      return;
-    }
+    if (thumbCache.has(term)) return;
+
     let cancelled = false;
     fetch(`/api/quiz-image?term=${encodeURIComponent(term)}`)
       .then((r) => r.json())
@@ -77,7 +77,6 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
         }
       })
       .catch(() => {
-        thumbCache.set(term, null);
         if (!cancelled) setShowEmoji(true);
       });
     return () => {

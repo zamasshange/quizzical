@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import CategoryNav from "@/components/CategoryNav";
@@ -64,7 +65,9 @@ export default function Home() {
                 after every answer.
               </p>
               <div className="w-full max-w-lg">
-                <HeroSearch />
+                <Suspense fallback={null}>
+                  <HeroSearch />
+                </Suspense>
               </div>
               <Link
                 href="/ai"

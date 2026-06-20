@@ -2,15 +2,17 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { quizzes, getCategory } from "@/lib/quizzes";
 import { getExcluded, playHistoryKey, recordSeen } from "@/lib/playHistory";
 import { SearchIcon } from "./icons";
 
 export default function HeroSearch() {
   const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q")?.trim() ?? "";
+  const [query, setQuery] = useState(urlQuery);
+  const [open, setOpen] = useState(Boolean(urlQuery));
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const results = useMemo(() => {

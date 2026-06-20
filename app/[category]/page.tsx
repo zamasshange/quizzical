@@ -66,7 +66,7 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
     <div className="relative z-0 flex flex-auto flex-col">
       <JsonLd
         data={[
-          categoryCollectionJsonLd(found, own.length),
+          categoryCollectionJsonLd(found, totalItems),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
             { name: found.name, path: `/${found.slug}` },

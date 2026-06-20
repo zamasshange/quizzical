@@ -78,7 +78,11 @@ export default async function QuizOverviewPage(
               {quiz.description}
             </p>
 
-            <div className="grid w-full grid-cols-2 gap-x-3 gap-y-4 font-bold text-ink/60 sm:grid-cols-4 sm:gap-4">
+            <div
+              className={`grid w-full gap-x-3 gap-y-4 font-bold text-ink/60 ${
+                poolNote ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-4"
+              } sm:gap-4`}
+            >
               <div className="min-w-0 text-center">
                 <div className="font-display text-xl text-ink sm:text-2xl">
                   {questionCount}

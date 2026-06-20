@@ -73,17 +73,24 @@ body {
 /* Clerk auth — flush form inside Quizzical shell (no nested card drift) */
 .auth-clerk-shell {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 .auth-clerk-shell > div {
   width: 100% !important;
   max-width: 100% !important;
-  margin-inline: 0 !important;
+  margin-inline: auto !important;
 }
+.auth-clerk-shell [class*="cl-rootBox"],
 .auth-clerk-shell [class*="cl-cardBox"],
-.auth-clerk-shell [class*="cl-card"]:not([class*="cardBox"]) {
+.auth-clerk-shell [class*="cl-card"]:not([class*="cardBox"]),
+.auth-clerk-shell [class*="cl-main"],
+.auth-clerk-shell form {
   width: 100% !important;
   max-width: 100% !important;
-  margin-inline: 0 !important;
+  margin-inline: auto !important;
+}
+.auth-clerk-shell [class*="cl-cardBox"] {
   box-shadow: none !important;
 }
 .auth-clerk-shell [class*="cl-card"]:not([class*="cardBox"]) {

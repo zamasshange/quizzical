@@ -12,8 +12,8 @@ export default function QuizGrid({ quizzes }: { quizzes: Quiz[] }) {
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
-      {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} />
+      {quizzes.map((quiz, index) => (
+        <QuizCard key={quiz.id} quiz={quiz} index={index} />
       ))}
     </div>
   );
