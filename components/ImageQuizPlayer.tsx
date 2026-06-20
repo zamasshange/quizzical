@@ -5,7 +5,7 @@ import Link from "next/link";
 import Button3D from "./Button3D";
 import RevealCard from "./RevealCard";
 import MobileRevealBar from "./MobileRevealBar";
-import { useGameSounds } from "@/lib/sound";
+import { playClick, useGameSounds, useQuizFinishSound } from "@/lib/sound";
 import {
   getExcluded,
   playHistoryKey,
@@ -13,6 +13,11 @@ import {
   rotateExcluded,
 } from "@/lib/playHistory";
 import type { GameMode } from "@/lib/imageQuestions";
+import {
+  optimizeQuizImageUrl,
+  prefetchImages,
+  prefetchUpcoming,
+} from "@/lib/quizImageUrl";
 
 type SourceQuestion = {
   id: string;
@@ -34,7 +39,9 @@ const ANSWER_STYLES = [
   { bg: "#00a76d", shape: "■", key: "D" },
 ];
 
-const QUESTION_SECONDS = 20;
+const TIMER_OPTIONS = [10, 15, 20, 30, 45] as const;
+type TimerSeconds = (typeof TIMER_OPTIONS)[number];
+const DEFAULT_TIMER: TimerSeconds = 20;
 const MAX_POINTS = 1000;
 const MAX_QUESTIONS = 10;
 
@@ -80,6 +87,8 @@ function prepare(rows: SourceQuestion[]): PreparedQuestion[] {
 export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [status, setStatus] = useState<Status>("setup");
   const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
+  const [timerSeconds, setTimerSeconds] = useState<TimerSeconds>(DEFAULT_TIMER);
+  const [loadProgress, setLoadProgress] = useState("");
   const [questions, setQuestions] = useState<PreparedQuestion[]>([]);
 
   const [index, setIndex] = useState(0);
@@ -87,13 +96,16 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(QUESTION_SECONDS);
+  const [timeLeft, setTimeLeft] = useState<number>(DEFAULT_TIMER);
   const [showHint, setShowHint] = useState(false);
   const { playCorrect, playWrong } = useGameSounds();
+
+  useQuizFinishSound(phase, correctCount, questions.length);
 
   const loadQuestions = useCallback(
     async (level: Difficulty, rotate = false) => {
       setStatus("loading");
+      setLoadProgress("Building quiz…");
       const historyKey = playHistoryKey("image", mode.category, level);
       if (rotate) rotateExcluded(historyKey);
       const excluded = getExcluded(historyKey);
@@ -122,6 +134,18 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           return;
         }
 
+        setLoadProgress("Loading images…");
+        const allUrls = prepared.flatMap((q) =>
+          [q.image_url, q.reveal_image_url].filter((u): u is string => !!u),
+        );
+        const firstUrls = prepared
+          .slice(0, 3)
+          .flatMap((q) =>
+            [q.image_url, q.reveal_image_url].filter((u): u is string => !!u),
+          );
+        await prefetchImages(firstUrls);
+        void prefetchImages(allUrls);
+
         recordSeen(historyKey, {
           answers: prepared.map((q) => q.answers[q.correct]),
           images: prepared.map((q) => q.image_url),
@@ -133,15 +157,16 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setSelected(null);
         setScore(0);
         setCorrectCount(0);
-        setTimeLeft(QUESTION_SECONDS);
+        setTimeLeft(timerSeconds);
         setShowHint(false);
         setPhase("playing");
+        setLoadProgress("");
         setStatus("ready");
       } catch {
         setStatus("error");
       }
     },
-    [mode.category],
+    [mode.category, timerSeconds],
   );
 
   const question = questions[index];
@@ -150,11 +175,12 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const lockAnswer = useCallback(
     (choice: number | null) => {
       if (!question) return;
+      if (choice !== null) playClick();
       setPhase("reveal");
       setSelected(choice);
       if (choice !== null && choice === question.correct) {
         const earned = Math.round(
-          MAX_POINTS * (0.5 + 0.5 * (timeLeft / QUESTION_SECONDS)),
+          MAX_POINTS * (0.5 + 0.5 * (timeLeft / timerSeconds)),
         );
         setScore((s) => s + earned);
         setCorrectCount((c) => c + 1);
@@ -163,8 +189,13 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         playWrong();
       }
     },
-    [question, timeLeft, playCorrect, playWrong],
+    [question, timeLeft, timerSeconds, playCorrect, playWrong],
   );
+
+  useEffect(() => {
+    if (status !== "ready" || questions.length === 0) return;
+    prefetchUpcoming(questions, index + 1, 3);
+  }, [status, index, questions]);
 
   useEffect(() => {
     if (status !== "ready") return;
@@ -211,7 +242,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     }
     setIndex((i) => i + 1);
     setSelected(null);
-    setTimeLeft(QUESTION_SECONDS);
+    setTimeLeft(timerSeconds);
     setShowHint(false);
     setPhase("playing");
   }
@@ -225,13 +256,19 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       <Centered>
         <span className="text-5xl">{mode.emoji}</span>
         <h2 className="font-display text-2xl font-extrabold">{mode.title}</h2>
-        <p className="font-bold text-ink/60">Choose a difficulty to start.</p>
+        <p className="font-bold text-ink/60">Choose difficulty and timer.</p>
         <div className="flex w-full max-w-xs flex-col gap-2">
+          <span className="text-left text-xs font-extrabold uppercase tracking-wide text-ink/45">
+            Difficulty
+          </span>
           {DIFFICULTIES.map((d) => (
             <button
               key={d}
               type="button"
-              onClick={() => setDifficulty(d)}
+              onClick={() => {
+                playClick();
+                setDifficulty(d);
+              }}
               className={`rounded-xl border-[3px] border-ink py-2.5 text-base font-extrabold transition-colors ${
                 difficulty === d
                   ? "bg-grass text-white"
@@ -249,6 +286,30 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             </button>
           ))}
         </div>
+        <div className="flex w-full max-w-xs flex-col gap-2">
+          <span className="text-left text-xs font-extrabold uppercase tracking-wide text-ink/45">
+            Timer per question
+          </span>
+          <div className="grid grid-cols-5 gap-2">
+            {TIMER_OPTIONS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  playClick();
+                  setTimerSeconds(t);
+                }}
+                className={`rounded-xl border-[3px] border-ink py-2 text-sm font-extrabold transition-colors ${
+                  timerSeconds === t
+                    ? "bg-petrol text-cream"
+                    : "bg-cream text-ink hover:bg-cream-dark"
+                }`}
+              >
+                {t}s
+              </button>
+            ))}
+          </div>
+        </div>
         <Button3D
           variant="grass"
           size="lg"
@@ -265,7 +326,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       <Centered>
         <span className="text-5xl">{mode.emoji}</span>
         <p className="font-display text-xl font-extrabold text-ink/60">
-          Building your {difficulty} quiz…
+          {loadProgress || `Building your ${difficulty} quiz…`}
         </p>
       </Centered>
     );
@@ -347,7 +408,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             Play again
           </Button3D>
           <Button3D variant="white" size="lg" onClick={() => setStatus("setup")}>
-            Change difficulty
+            Change settings
           </Button3D>
           <Button3D variant="white" size="lg" href="/">
             Back home
@@ -359,12 +420,14 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   const revealed = phase === "reveal";
   const showReveal = revealed && !!question.reveal_image_url;
-  const displaySrc = showReveal
-    ? (question.reveal_image_url as string)
-    : question.image_url;
+  const displaySrc = optimizeQuizImageUrl(
+    showReveal
+      ? (question.reveal_image_url as string)
+      : question.image_url,
+  );
   const isMovieMode = mode.category === "Movie";
-  const lowTime = timeLeft <= 5;
-  const timerFrac = Math.max(0, timeLeft / QUESTION_SECONDS);
+  const lowTime = timeLeft <= Math.max(3, Math.floor(timerSeconds * 0.25));
+  const timerFrac = Math.max(0, timeLeft / timerSeconds);
   const revealStatus =
     selected === question.correct
       ? "correct"
@@ -405,7 +468,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
         <div className="flex shrink-0 items-center gap-2 text-sm font-extrabold">
           <span className="hidden rounded-full border-2 border-ink bg-lime px-2.5 py-0.5 text-xs uppercase tracking-wide text-ink sm:inline">
-            {difficulty}
+            {difficulty} · {timerSeconds}s
           </span>
           <span className="rounded-full bg-ink px-3 py-1 text-white tabular-nums">
             {score.toLocaleString()}
@@ -463,17 +526,12 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            aria-hidden
-            src={displaySrc}
-            alt=""
-            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-xl"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
             key={`${question.id}-${showReveal ? "reveal" : "main"}`}
             src={displaySrc}
             alt={showReveal ? "Answer reveal" : "Guess from this image"}
-            loading="lazy"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className={`animate-quiz-pop relative h-full w-full ${
               isMovieMode && !showReveal
                 ? "scale-105 object-cover object-center"

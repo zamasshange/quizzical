@@ -13,6 +13,7 @@ import { fetchWikipediaSummary } from "./wikipedia";
 import { fetchMovieData, isTmdbPosterImageUrl } from "./tmdb";
 import { getCachedQuiz, saveCachedQuiz, getCachedByCategory } from "./quizCache";
 import { getCandidatePool, saveCandidatePool } from "./candidateCache";
+import { optimizeQuizImageUrl } from "./quizImageUrl";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
@@ -355,12 +356,14 @@ function buildQuestion(row: {
     id: row.id,
     category: row.category,
     question: POOLS[row.category]?.question ?? "Who is this?",
-    image_url: row.image_url,
+    image_url: optimizeQuizImageUrl(row.image_url),
     description: row.description,
     correct_answer: row.correct_answer,
     wrong_answers: row.wrong_answers,
     options: shuffle([row.correct_answer, ...row.wrong_answers]),
-    reveal_image_url: row.poster_url ?? undefined,
+    reveal_image_url: row.poster_url
+      ? optimizeQuizImageUrl(row.poster_url)
+      : undefined,
     hint: row.hint ?? undefined,
   };
 }
@@ -481,48 +484,99 @@ export async function generateImageQuizBatch(
   const usedAnswer = new Set<string>(blocked.answers);
   const usedImage = new Set<string>(blocked.images);
 
-  // Up to two passes: normal exclusions, then a fresh AI pool if still short.
-  for (let pass = 0; pass < 2 && results.length < count; pass++) {
-    const passExclude: ExcludeSet = {
-      answers: [...usedAnswer],
-      images: [...usedImage],
-    };
-    const { entries, distractors } = await workingEntries(
-      category,
-      count,
-      difficulty,
-      passExclude,
+  const distractorPool = new Set<string>();
+  for (const e of POOLS[category].entries) distractorPool.add(e.label);
+  const pool = getCandidatePool(`${category}|${difficulty}`);
+  for (const c of pool ?? []) {
+    distractorPool.add(c.name);
+    for (const d of c.decoys) distractorPool.add(d);
+  }
+  const distractors = [...distractorPool];
+
+  // Fast path — serve from cache instantly (no Wikipedia/TMDB round-trips).
+  const cachedRows = shuffle(await getCachedByCategory(category));
+  for (const row of cachedRows) {
+    if (results.length >= count) break;
+    const answerKey = row.correct_answer.toLowerCase();
+    if (usedAnswer.has(answerKey) || usedImage.has(row.image_url)) continue;
+    usedAnswer.add(answerKey);
+    usedImage.add(row.image_url);
+    const wrong =
+      row.wrong_answers.length >= 3
+        ? row.wrong_answers
+        : finalizeWrongAnswers(row.correct_answer, [], distractors);
+    results.push(
+      buildQuestion({
+        id: row.id,
+        category: row.category,
+        image_url: row.image_url,
+        description: row.description,
+        correct_answer: row.correct_answer,
+        wrong_answers: wrong,
+        poster_url: row.poster_url,
+        hint: row.hint,
+      }),
     );
+  }
 
-    const WINDOW = count + 8;
-    for (let i = 0; i < entries.length && results.length < count; i += WINDOW) {
-      const slice = entries.slice(i, i + WINDOW);
-      const qs = await Promise.all(
-        slice.map((e) =>
-          generateForEntry(category, e, distractors).catch(() => null),
-        ),
-      );
-      for (const q of qs) {
-        if (!q) continue;
-        const answerKey = q.correct_answer.toLowerCase();
-        if (usedAnswer.has(answerKey) || usedImage.has(q.image_url)) continue;
-        usedAnswer.add(answerKey);
-        usedImage.add(q.image_url);
-        results.push(q);
-        if (results.length >= count) break;
-      }
-    }
+  if (results.length >= count) return results.slice(0, count);
 
-    if (pass === 0 && results.length < count) {
-      // Refresh the AI candidate pool so the retry has genuinely new subjects.
-      const fresh = await aiCandidates(category, 36, difficulty);
-      if (fresh && fresh.length > 0) {
-        saveCandidatePool(`${category}|${difficulty}`, fresh);
-      }
+  // Slow path — generate any remaining questions (parallel, capped).
+  const { entries, distractors: liveDistractors } = await workingEntries(
+    category,
+    count,
+    difficulty,
+    exclude,
+  );
+
+  const pending = entries.filter(
+    (e) => !usedAnswer.has(e.label.toLowerCase()),
+  );
+  const CONCURRENCY = 6;
+  for (let i = 0; i < pending.length && results.length < count; i += CONCURRENCY) {
+    const slice = pending.slice(i, i + CONCURRENCY);
+    const qs = await Promise.all(
+      slice.map((e) =>
+        generateForEntry(category, e, liveDistractors).catch(() => null),
+      ),
+    );
+    for (const q of qs) {
+      if (!q) continue;
+      const answerKey = q.correct_answer.toLowerCase();
+      if (usedAnswer.has(answerKey) || usedImage.has(q.image_url)) continue;
+      usedAnswer.add(answerKey);
+      usedImage.add(q.image_url);
+      results.push(q);
+      if (results.length >= count) break;
     }
   }
 
-  return results;
+  if (results.length >= count) return results.slice(0, count);
+
+  // Second pass with refreshed AI pool if still short.
+  const fresh = await aiCandidates(category, 36, difficulty);
+  if (fresh && fresh.length > 0) {
+    saveCandidatePool(`${category}|${difficulty}`, fresh);
+  }
+  const retry = await workingEntries(category, count, difficulty, {
+    answers: [...usedAnswer],
+    images: [...usedImage],
+  });
+  for (const e of retry.entries) {
+    if (results.length >= count) break;
+    if (usedAnswer.has(e.label.toLowerCase())) continue;
+    const q = await generateForEntry(category, e, retry.distractors).catch(
+      () => null,
+    );
+    if (!q) continue;
+    const answerKey = q.correct_answer.toLowerCase();
+    if (usedAnswer.has(answerKey) || usedImage.has(q.image_url)) continue;
+    usedAnswer.add(answerKey);
+    usedImage.add(q.image_url);
+    results.push(q);
+  }
+
+  return results.slice(0, count);
 }
 
 export async function generateImageQuiz(

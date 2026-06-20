@@ -88,7 +88,7 @@ async function fetchPageImage(title: string): Promise<string | null> {
       titles: title.replace(/ /g, "_"),
       prop: "pageimages",
       piprop: "thumbnail|original",
-      pithumbsize: "640",
+      pithumbsize: "480",
       format: "json",
     });
     const res = await fetch(`${WIKI_API}?${params}`, FETCH_OPTS);
@@ -178,8 +178,7 @@ export async function fetchWikipediaSummary(
       type?: string;
     };
 
-    const image_url =
-      data.thumbnail?.source ?? data.originalimage?.source ?? null;
+    const image_url = data.thumbnail?.source ?? null;
 
     // Skip disambiguation pages or anything without a usable image.
     if (!image_url || data.type === "disambiguation") return null;
