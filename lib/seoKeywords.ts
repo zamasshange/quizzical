@@ -213,6 +213,45 @@ export const PAGE_KEYWORDS = {
     "join quizzical",
     "quiz player signup",
   ],
+  about: [
+    ...BRAND_KEYWORDS,
+    "about quizzical",
+    "AI quiz platform",
+    "learn while playing",
+    "educational quiz games",
+    "BDL Corp about",
+    "free trivia platform",
+  ],
+  founder: [
+    ...BRAND_KEYWORDS,
+    "Zama Shange founder",
+    "Zama Shange developer",
+    "BDL Corp founder",
+    "South African developer",
+    "Burdolar creator",
+    "Sonke AI creator",
+  ],
+  privacy: [
+    ...BRAND_KEYWORDS,
+    "quizzical privacy policy",
+    "quiz platform privacy",
+    "data protection",
+    "cookie policy",
+  ],
+  contact: [
+    ...BRAND_KEYWORDS,
+    "contact quizzical",
+    "quiz support",
+    "feedback quizzical",
+    "BDL Corp contact",
+  ],
+  status: [
+    ...BRAND_KEYWORDS,
+    "quizzical status",
+    "platform status",
+    "service health",
+    "quiz site uptime",
+  ],
 };
 
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {

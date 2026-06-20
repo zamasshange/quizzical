@@ -6,6 +6,7 @@ import NavbarAuth from "./NavbarAuth";
 
 const NAV_LINKS = [
   { label: "Browse", href: "/" },
+  { label: "About", href: "/about" },
   { label: "Picture games", href: "/#picture-games" },
   { label: "AI Quiz", href: "/ai" },
   { label: "Sign Up", href: "/signup" },

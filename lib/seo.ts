@@ -257,3 +257,53 @@ export function topicMetadata(topic: SeoTopic): Metadata {
     ],
   });
 }
+
+export function aboutMetadata(): Metadata {
+  return buildMetadata({
+    title: "About Us",
+    description:
+      "Learn about Quizzical — an AI-powered quiz platform by BDL Corp that combines entertainment with education. Discover our mission to make knowledge fun and accessible.",
+    path: "/about",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.about],
+  });
+}
+
+export function founderMetadata(): Metadata {
+  return buildMetadata({
+    title: "About Zama Shange — Founder",
+    description:
+      "Meet Zama Shange, South African founder, designer, and developer behind Quizzical, BDL Corp, BDL News, and Sonke AI — building digital products that educate and inspire.",
+    path: "/founder",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.founder],
+  });
+}
+
+export function privacyPolicyMetadata(): Metadata {
+  return buildMetadata({
+    title: "Privacy Policy",
+    description:
+      "Quizzical privacy policy — how BDL Corp collects, uses, and protects your data. Account info, cookies, third-party services, and your rights explained.",
+    path: "/privacy-policy",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.privacy],
+  });
+}
+
+export function contactMetadata(): Metadata {
+  return buildMetadata({
+    title: "Contact Us",
+    description:
+      "Get in touch with the Quizzical team by BDL Corp. Feedback, bug reports, partnerships, and general questions — we aim to respond within 24–72 business hours.",
+    path: "/contact",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.contact],
+  });
+}
+
+export function statusMetadata(): Metadata {
+  return buildMetadata({
+    title: "Platform Status",
+    description:
+      "Current operational status of Quizzical services — quiz gameplay, AI generation, authentication, leaderboards, and media content.",
+    path: "/status",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.status],
+  });
+}
