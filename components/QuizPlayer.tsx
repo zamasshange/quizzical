@@ -188,14 +188,6 @@ export default function QuizPlayer({
 
   const isLast = index === questions.length - 1;
 
-  const isFlagQuestion = isFlagImageQuery(question.imageQuery);
-
-  const syncFlagUrl = isFlagQuestion
-    ? proxiedQuizImageUrl(flagImageFromQuery(question.imageQuery!) ?? "")
-    : null;
-
-  const displayQuestionImageUrl = syncFlagUrl ?? questionImageUrl;
-
 
 
   const lockAnswer = useCallback(
@@ -495,6 +487,16 @@ export default function QuizPlayer({
       </div>
     );
   }
+
+
+
+  const isFlagQuestion = isFlagImageQuery(question.imageQuery);
+
+  const syncFlagUrl = isFlagQuestion
+    ? proxiedQuizImageUrl(flagImageFromQuery(question.imageQuery!) ?? "")
+    : null;
+
+  const displayQuestionImageUrl = syncFlagUrl ?? questionImageUrl;
 
 
 
