@@ -22,6 +22,15 @@ Copy `.env.example` to `.env.local` and fill in your values.
 
 Add `quizzical.site` and your `*.vercel.app` domain in the [Clerk dashboard](https://dashboard.clerk.com).
 
+**Clerk dashboard — enable username sign-in**
+
+1. Open [Clerk Dashboard](https://dashboard.clerk.com) → **User & Authentication** → **Email, phone, username**
+2. Enable **Username** as a sign-in identifier
+3. (Recommended) Set **Username** as the primary identifier and keep email optional for recovery
+4. Under **Sessions**, ensure the default session token includes `publicMetadata` (default in most Clerk apps)
+
+New users are redirected to `/onboarding` after sign-up to pick a cartoon avatar before using the app.
+
 **Optional**
 
 - `NEXT_PUBLIC_SITE_URL` — canonical URL for SEO (default: `https://quizzical.site`)
