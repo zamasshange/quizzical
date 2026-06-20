@@ -1,9 +1,14 @@
 // Client-safe types, constants and validation for image-based quiz questions.
-//
-// Admin CRUD lives in the server-only module `lib/imageQuestionsStore.ts`.
-// Player-facing image games use lib/quizGenerator.ts (real Wikipedia/TMDB).
 
-export type ImageCategory = "Celebrity" | "Athlete" | "Movie" | "Music";
+export type ImageCategory =
+  | "Celebrity"
+  | "Athlete"
+  | "Football"
+  | "Basketball"
+  | "Cricket"
+  | "Movie"
+  | "Music";
+
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
 export type ImageQuestion = {
@@ -13,7 +18,7 @@ export type ImageQuestion = {
   image_url: string;
   question: string;
   correct_answer: string;
-  wrong_answers: string[]; // exactly 3
+  wrong_answers: string[];
   difficulty: Difficulty;
   created_at: string;
 };
@@ -31,6 +36,9 @@ export type ListFilters = {
 
 export const IMAGE_CATEGORIES: ImageCategory[] = [
   "Celebrity",
+  "Football",
+  "Basketball",
+  "Cricket",
   "Athlete",
   "Movie",
   "Music",
@@ -38,14 +46,24 @@ export const IMAGE_CATEGORIES: ImageCategory[] = [
 
 export const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 
+export type GameModeSlug =
+  | "celebrity"
+  | "football"
+  | "basketball"
+  | "cricket"
+  | "athlete"
+  | "movie"
+  | "music";
+
 /** Maps a play-route slug to its category + display metadata. */
 export type GameMode = {
-  slug: "celebrity" | "athlete" | "movie" | "music";
+  slug: GameModeSlug;
   category: ImageCategory;
   title: string;
   emoji: string;
   color: string;
   defaultQuestion: string;
+  subtitle?: string;
 };
 
 export const IMAGE_GAME_MODES: GameMode[] = [
@@ -58,12 +76,40 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     defaultQuestion: "Who is this?",
   },
   {
+    slug: "football",
+    category: "Football",
+    title: "Guess the Footballer",
+    emoji: "⚽",
+    color: "#00a76d",
+    defaultQuestion: "Who is this footballer?",
+    subtitle: "Soccer stars worldwide",
+  },
+  {
+    slug: "basketball",
+    category: "Basketball",
+    title: "Guess the Basketball Player",
+    emoji: "🏀",
+    color: "#ff6b35",
+    defaultQuestion: "Who is this player?",
+    subtitle: "NBA & world basketball",
+  },
+  {
+    slug: "cricket",
+    category: "Cricket",
+    title: "Guess the Cricketer",
+    emoji: "🏏",
+    color: "#2ecc71",
+    defaultQuestion: "Who is this cricketer?",
+    subtitle: "International cricket legends",
+  },
+  {
     slug: "athlete",
     category: "Athlete",
     title: "Guess the Athlete",
     emoji: "🏅",
     color: "#ff9f43",
     defaultQuestion: "Who is this athlete?",
+    subtitle: "Tennis, F1, swimming & more",
   },
   {
     slug: "movie",
@@ -97,7 +143,6 @@ function isPlaceholderImageUrl(url: string): boolean {
   );
 }
 
-/** Validates an incoming payload for create/update. Returns an error string or null. */
 export function validateImageQuestionPayload(
   body: unknown,
   { partial = false }: { partial?: boolean } = {},

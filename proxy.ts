@@ -1,6 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { AVATAR_COOKIE_NAME, getAvatarId } from "@/lib/userMetadata";
+import {
+  AVATAR_COOKIE_NAME,
+  ONBOARDING_COOKIE_NAME,
+  hasCompletedOnboarding,
+} from "@/lib/userMetadata";
 
 // Protect admin dashboard and API routes. Unauthenticated users go to /signin.
 // Next.js 16 uses proxy.ts (formerly middleware.ts) for request interception.
@@ -30,16 +34,16 @@ export default clerkMiddleware(async (auth, req) => {
 
   const { userId, sessionClaims } = await auth();
 
-  const avatarId = getAvatarId(
-    sessionClaims,
-    req.cookies.get(AVATAR_COOKIE_NAME)?.value,
-  );
+  const onboardingDone = hasCompletedOnboarding(sessionClaims, {
+    avatar: req.cookies.get(AVATAR_COOKIE_NAME)?.value,
+    onboarded: req.cookies.get(ONBOARDING_COOKIE_NAME)?.value,
+  });
 
   if (
     userId &&
     !isAuthRoute(req) &&
     !isOnboardingBypass(req) &&
-    !avatarId
+    !onboardingDone
   ) {
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }

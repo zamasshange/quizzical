@@ -14,8 +14,11 @@ import { fetchMovieData, isTmdbPosterImageUrl } from "./tmdb";
 import { getCachedQuiz, saveCachedQuiz, getCachedByCategory } from "./quizCache";
 import { getCandidatePool, saveCandidatePool } from "./candidateCache";
 import {
-  ATHLETE_AI_SPORT_RULE,
   ATHLETE_KIND_LABEL,
+  BASKETBALL_KIND_LABEL,
+  CATEGORY_AI_RULES,
+  CRICKET_KIND_LABEL,
+  FOOTBALL_KIND_LABEL,
   isMajorTeamSportAthlete,
 } from "./athleteSports";
 import {
@@ -63,7 +66,7 @@ const POOLS: Record<string, Pool> = {
     ],
   },
   Athlete: {
-    question: "Who is this?",
+    question: "Who is this athlete?",
     entries: [
       { label: "Serena Williams", query: "Serena Williams" },
       { label: "Roger Federer", query: "Roger Federer" },
@@ -77,6 +80,57 @@ const POOLS: Record<string, Pool> = {
       { label: "Tiger Woods", query: "Tiger Woods" },
       { label: "Ian Thorpe", query: "Ian Thorpe" },
       { label: "Chloe Kim", query: "Chloe Kim" },
+    ],
+  },
+  Football: {
+    question: "Who is this footballer?",
+    entries: [
+      { label: "Lionel Messi", query: "Lionel Messi" },
+      { label: "Cristiano Ronaldo", query: "Cristiano Ronaldo" },
+      { label: "Kylian Mbappé", query: "Kylian Mbappé" },
+      { label: "Neymar", query: "Neymar" },
+      { label: "Erling Haaland", query: "Erling Haaland" },
+      { label: "Mohamed Salah", query: "Mohamed Salah" },
+      { label: "Kevin De Bruyne", query: "Kevin De Bruyne" },
+      { label: "Robert Lewandowski", query: "Robert Lewandowski" },
+      { label: "Harry Kane", query: "Harry Kane" },
+      { label: "Luka Modrić", query: "Luka Modrić" },
+      { label: "Pelé", query: "Pelé" },
+      { label: "Zinedine Zidane", query: "Zinedine Zidane" },
+    ],
+  },
+  Basketball: {
+    question: "Who is this basketball player?",
+    entries: [
+      { label: "LeBron James", query: "LeBron James" },
+      { label: "Michael Jordan", query: "Michael Jordan" },
+      { label: "Stephen Curry", query: "Stephen Curry" },
+      { label: "Kobe Bryant", query: "Kobe Bryant" },
+      { label: "Shaquille O'Neal", query: "Shaquille O'Neal" },
+      { label: "Kevin Durant", query: "Kevin Durant" },
+      { label: "Giannis Antetokounmpo", query: "Giannis Antetokounmpo" },
+      { label: "Magic Johnson", query: "Magic Johnson" },
+      { label: "Larry Bird", query: "Larry Bird" },
+      { label: "Tim Duncan", query: "Tim Duncan" },
+      { label: "Dirk Nowitzki", query: "Dirk Nowitzki" },
+      { label: "Hakeem Olajuwon", query: "Hakeem Olajuwon" },
+    ],
+  },
+  Cricket: {
+    question: "Who is this cricketer?",
+    entries: [
+      { label: "Virat Kohli", query: "Virat Kohli" },
+      { label: "Sachin Tendulkar", query: "Sachin Tendulkar" },
+      { label: "MS Dhoni", query: "MS Dhoni" },
+      { label: "Ben Stokes", query: "Ben Stokes" },
+      { label: "Babar Azam", query: "Babar Azam" },
+      { label: "Steve Smith", query: "Steve Smith (cricketer)" },
+      { label: "Jacques Kallis", query: "Jacques Kallis" },
+      { label: "Shane Warne", query: "Shane Warne" },
+      { label: "Brian Lara", query: "Brian Lara" },
+      { label: "AB de Villiers", query: "AB de Villiers" },
+      { label: "Rohit Sharma", query: "Rohit Sharma" },
+      { label: "Joe Root", query: "Joe Root" },
     ],
   },
   Movie: {
@@ -157,6 +211,9 @@ function shuffle<T>(arr: T[]): T[] {
 const AI_KIND: Record<string, string> = {
   Celebrity: "famous actors and celebrities",
   Athlete: ATHLETE_KIND_LABEL,
+  Football: FOOTBALL_KIND_LABEL,
+  Basketball: BASKETBALL_KIND_LABEL,
+  Cricket: CRICKET_KIND_LABEL,
   Movie: "famous movies",
   Music: "famous music artists or bands",
 };
@@ -200,13 +257,13 @@ async function aiCandidates(
   const kind = AI_KIND[category] ?? category;
   const seed = Math.floor(Math.random() * 1_000_000);
   const isMovie = category === "Movie";
-  const isAthlete = category === "Athlete";
+  const categoryRule = CATEGORY_AI_RULES[category];
 
   try {
     const prompt =
       `Generate ${count} ${kind} for a "guess from a photo" game. ` +
       `${DIFFICULTY_BRIEF[difficulty]}. ` +
-      (isAthlete ? `${ATHLETE_AI_SPORT_RULE} ` : "") +
+      (categoryRule ? `${categoryRule} ` : "") +
       `For EACH one, also provide exactly 3 decoy answers (wrong but plausible). ` +
       `${decoyBrief(category, difficulty)} ` +
       `Decoys must be real and must NOT equal the correct answer. ` +
@@ -258,7 +315,10 @@ async function aiCandidates(
         out.push({ name, decoys });
       }
     }
-    const filtered = out.filter((c) => !isMajorTeamSportAthlete(c.name));
+    const filtered =
+      category === "Athlete"
+        ? out.filter((c) => !isMajorTeamSportAthlete(c.name))
+        : out;
     return filtered.length > 0 ? filtered : null;
   } catch {
     return null;
