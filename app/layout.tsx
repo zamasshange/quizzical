@@ -3,7 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Nunito, Baloo_2 } from "next/font/google";
 import "./globals.css";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
-import { BASE_KEYWORDS } from "@/lib/seoKeywords";
+import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -24,11 +24,16 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Play free quiz games online at Quizzical.site — geography, movies, sports, flags, picture quizzes, and AI trivia. Learn something new after every answer.",
+    "Play free quiz games online at Quizzical.site by BDL Corp — geography, movies, sports, flags, picture quizzes, and AI trivia from Sonke AI. Created by Zama Shange and Burdolar.",
   applicationName: SITE_NAME,
-  keywords: BASE_KEYWORDS,
-  authors: [{ name: "BDL Corp", url: SITE_URL }],
-  creator: "BDL Corp",
+  keywords: [...BASE_KEYWORDS, ...BRAND_KEYWORDS],
+  authors: [
+    { name: "BDL Corp", url: SITE_URL },
+    { name: "Zama Shange", url: SITE_URL },
+    { name: "Sonke AI", url: SITE_URL },
+    { name: "Burdolar", url: SITE_URL },
+  ],
+  creator: "BDL Corp · Zama Shange · Sonke AI · Burdolar",
   publisher: "BDL Corp",
   formatDetection: { email: false, address: false, telephone: false },
   openGraph: {

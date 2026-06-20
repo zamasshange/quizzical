@@ -3,6 +3,21 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="custom-container px-4 py-8 sm:px-6 md:px-8 lg:px-12">
+      <div className="mb-4 flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-ink/40">
+        <span>Quizzical</span>
+        <span aria-hidden>•</span>
+        <span>BDL Corp</span>
+        <span aria-hidden>•</span>
+        <span>Sonke AI</span>
+        <span aria-hidden>•</span>
+        <span>Zama Shange</span>
+        <span aria-hidden>•</span>
+        <span>Burdolar</span>
+        <span aria-hidden>•</span>
+        <Link href="/signin" className="hover:text-ink">
+          Sign In
+        </Link>
+      </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-ink/50">
         <span>© {new Date().getFullYear()} BDL Corp</span>
         <span aria-hidden>•</span>
@@ -27,7 +42,9 @@ export default function Footer() {
           <span aria-hidden>▶</span>
           YouTube
         </a>
-        <span className="ml-auto">Quizzical — a BDL Corp game</span>
+        <span className="ml-auto">
+          Quizzical — a BDL Corp game by Zama Shange &amp; Sonke AI
+        </span>
       </div>
     </footer>
   );

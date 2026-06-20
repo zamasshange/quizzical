@@ -7,6 +7,7 @@ import {
   CATEGORY_KEYWORDS,
   IMAGE_GAME_KEYWORDS,
   PAGE_KEYWORDS,
+  QUIZ_LONGTAIL_KEYWORDS,
 } from "./seoKeywords";
 
 export const SITE_NAME = "Quizzical";
@@ -77,19 +78,9 @@ export function homeMetadata(): Metadata {
   return buildMetadata({
     title: "Free Online Quiz Games & Trivia",
     description:
-      "Play free quiz games online at Quizzical.site — geography, movies, sports, flags, celebrities, and AI-generated trivia. Learn something new after every answer.",
+      "Play free quiz games online at Quizzical.site by BDL Corp — geography, movies, sports, flags, celebrities, and AI-generated trivia powered by Sonke AI. Learn something new after every answer.",
     path: "/",
-    keywords: [
-      ...BASE_KEYWORDS,
-      ...PAGE_KEYWORDS.home,
-      "quizzical.site",
-      "quiz website",
-      "trivia website free",
-      "guess the flag",
-      "guess the celebrity",
-      "movie quiz game",
-      "educational quiz games",
-    ],
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.home],
   });
 }
 
@@ -124,6 +115,7 @@ export function quizMetadata(quiz: Quiz): Metadata {
     keywords: [
       ...BASE_KEYWORDS,
       ...catKeys,
+      ...QUIZ_LONGTAIL_KEYWORDS,
       quiz.title,
       `${quiz.title} quiz`,
       `${quiz.title} trivia`,
@@ -153,6 +145,7 @@ export function quizPlayMetadata(quiz: Quiz): Metadata {
     keywords: [
       ...BASE_KEYWORDS,
       ...catKeys,
+      ...QUIZ_LONGTAIL_KEYWORDS,
       `play ${quiz.title.toLowerCase()}`,
       `${quiz.title} online`,
       `${quiz.title} quiz game`,
@@ -185,7 +178,7 @@ export function aiGeneratorMetadata(): Metadata {
   return buildMetadata({
     title: "AI Quiz Generator — Create Custom Trivia",
     description:
-      "Generate a custom quiz on any topic with AI. Enter a subject, pick difficulty, and play instantly — free AI quiz maker at Quizzical.site.",
+      "Generate a custom quiz on any topic with AI from Sonke AI. Enter a subject, pick difficulty, and play instantly — free AI quiz maker at Quizzical.site by BDL Corp.",
     path: "/ai",
     keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.ai],
   });
@@ -193,11 +186,11 @@ export function aiGeneratorMetadata(): Metadata {
 
 export function signInMetadata(): Metadata {
   return buildMetadata({
-    title: "Sign In",
+    title: "Sign In — Quizzical Account",
     description:
-      "Sign in to Quizzical to track your quiz scores and save progress across devices.",
+      "Sign in to Quizzical by BDL Corp to track quiz scores, save progress, and access your account. Free trivia games by Zama Shange and the Sonke AI team.",
     path: "/signin",
-    keywords: [...BASE_KEYWORDS, "quizzical login", "quiz account"],
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.signin],
     noIndex: true,
   });
 }

@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "Browse", href: "/" },
   { label: "Picture games", href: "/#picture-games" },
   { label: "AI Quiz", href: "/ai" },
+  { label: "Sign In", href: "/signin" },
 ];
 
 export default function Navbar() {
@@ -31,8 +32,8 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* Center nav links */}
-          <ul className="hidden items-center gap-1 md:flex">
+          {/* Center nav links — visible from sm up; Sign In always in NavbarAuth on mobile */}
+          <ul className="hidden items-center gap-1 sm:flex">
             {NAV_LINKS.map((link) => (
               <li key={link.label}>
                 <Link
