@@ -7,7 +7,7 @@ export default function NavbarAuth() {
   return (
     <>
       <Show when="signed-out">
-        <SignInButton mode="redirect" forceRedirectUrl="/signin">
+        <SignInButton mode="redirect" forceRedirectUrl="/">
           <button
             type="button"
             aria-label="Sign in"

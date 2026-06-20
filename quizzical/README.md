@@ -13,7 +13,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment variables
 
-Copy the commented keys in `.env.local` and fill in your values.
+Copy `.env.example` to `.env.local` (or uncomment the keys at the top of `.env.local`) and fill in your values.
 
 ### Required — Clerk (authentication)
 
