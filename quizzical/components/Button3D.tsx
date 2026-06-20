@@ -1,0 +1,75 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+type Variant = "grass" | "sky" | "lime" | "ink" | "white";
+type Size = "sm" | "md" | "lg";
+
+const variantClasses: Record<Variant, string> = {
+  grass: "bg-grass text-white",
+  sky: "bg-sky text-ink",
+  lime: "bg-lime text-ink",
+  ink: "bg-ink text-white",
+  white: "bg-white text-ink",
+};
+
+const sizeClasses: Record<Size, string> = {
+  sm: "px-5 py-2 text-sm",
+  md: "px-7 py-3 text-base",
+  lg: "px-9 py-3.5 text-lg",
+};
+
+type CommonProps = {
+  children: ReactNode;
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+};
+
+type ButtonProps = CommonProps & {
+  href?: undefined;
+  onClick?: () => void;
+  type?: "button" | "submit";
+};
+
+type LinkProps = CommonProps & {
+  href: string;
+};
+
+export default function Button3D(props: ButtonProps | LinkProps) {
+  const { children, variant = "grass", size = "md", className = "" } = props;
+
+  const face = `relative z-10 block rounded-full border-4 border-ink font-extrabold tracking-wide
+    -translate-y-1.5 transition-transform duration-75 group-hover:-translate-y-2 group-active:translate-y-0
+    ${variantClasses[variant]} ${sizeClasses[size]}`;
+
+  const inner = (
+    <>
+      <span className="absolute inset-0 rounded-full bg-ink" aria-hidden />
+      <span className={face}>
+        <span className="flex items-center justify-center gap-2 whitespace-nowrap">
+          {children}
+        </span>
+      </span>
+    </>
+  );
+
+  const wrapper = `group relative inline-flex select-none touch-manipulation outline-none ${className}`;
+
+  if ("href" in props && props.href !== undefined) {
+    return (
+      <Link href={props.href} className={wrapper}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type={props.type ?? "button"}
+      onClick={props.onClick}
+      className={wrapper}
+    >
+      {inner}
+    </button>
+  );
+}
