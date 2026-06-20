@@ -10,7 +10,7 @@
 // plausible and difficulty-consistent.
 
 import { fetchWikipediaSummary } from "./wikipedia";
-import { fetchMovieData } from "./tmdb";
+import { fetchMovieData, isTmdbPosterImageUrl } from "./tmdb";
 import { getCachedQuiz, saveCachedQuiz, getCachedByCategory } from "./quizCache";
 import { getCandidatePool, saveCandidatePool } from "./candidateCache";
 
@@ -377,12 +377,24 @@ async function generateForEntry(
   if (cached) {
     // Upgrade movie entries cached before the backdrop/poster/hint split.
     if (category === "Movie") {
-      const needsBackdrop = !cached.image_url.includes("image.tmdb.org");
+      const needsBackdrop =
+        !cached.image_url.includes("image.tmdb.org") ||
+        isTmdbPosterImageUrl(cached.image_url);
       const needsPoster = !cached.poster_url;
       const needsHint = !cached.hint;
       if (needsBackdrop || needsPoster || needsHint) {
         const m = await fetchMovieData(entry.label);
-        const image_url = m.backdrop_url ?? cached.image_url;
+        let image_url = m.backdrop_url ?? cached.image_url;
+        if (isTmdbPosterImageUrl(image_url)) {
+          let summary = await fetchWikipediaSummary(entry.query);
+          if (!summary)
+            summary = await fetchWikipediaSummary(`${entry.label} (film)`);
+          if (summary?.image_url && !isTmdbPosterImageUrl(summary.image_url)) {
+            image_url = summary.image_url;
+          } else if (needsBackdrop) {
+            image_url = cached.image_url;
+          }
+        }
         const poster_url = m.poster_url ?? cached.poster_url ?? undefined;
         const hint = m.hint ?? cached.hint ?? undefined;
         if (
@@ -416,10 +428,16 @@ async function generateForEntry(
   let hint: string | undefined;
 
   if (category === "Movie") {
-    // Question = textless TMDB backdrop (no title → real guess).
     const m = await fetchMovieData(entry.label);
-    if (!m.backdrop_url) return null; // skip if no spoiler-free scene
     image_url = m.backdrop_url;
+    if (!image_url || isTmdbPosterImageUrl(image_url)) {
+      let summary = await fetchWikipediaSummary(entry.query);
+      if (!summary) summary = await fetchWikipediaSummary(`${entry.label} (film)`);
+      if (summary?.image_url && !isTmdbPosterImageUrl(summary.image_url)) {
+        image_url = summary.image_url;
+      }
+    }
+    if (!image_url || isTmdbPosterImageUrl(image_url)) return null;
     poster_url = m.poster_url ?? undefined;
     hint = m.hint ?? undefined;
     let summary = await fetchWikipediaSummary(entry.query);

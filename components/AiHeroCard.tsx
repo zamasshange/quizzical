@@ -5,9 +5,9 @@ import { SparkleIcon } from "./icons";
 
 const EXAMPLES = ["Greek mythology", "90s pop music", "The solar system", "World War II"];
 
-export default function AiHeroCard() {
+export default function AiHeroCard({ className = "" }: { className?: string }) {
   return (
-    <div className="relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border-4 border-ink bg-white p-6 shadow-[0_6px_0_0_#0d0d0d] md:p-7">
+    <div className={`relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border-4 border-ink bg-white p-6 shadow-[0_6px_0_0_#0d0d0d] md:p-7 ${className}`}>
       {/* soft glow accents */}
       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-sky/40 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-grass/20 blur-2xl" />

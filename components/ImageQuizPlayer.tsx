@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Button3D from "./Button3D";
 import RevealCard from "./RevealCard";
+import MobileRevealBar from "./MobileRevealBar";
 import { useGameSounds } from "@/lib/sound";
 import {
   getExcluded,
@@ -361,11 +362,23 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const displaySrc = showReveal
     ? (question.reveal_image_url as string)
     : question.image_url;
+  const isMovieMode = mode.category === "Movie";
   const lowTime = timeLeft <= 5;
   const timerFrac = Math.max(0, timeLeft / QUESTION_SECONDS);
+  const revealStatus =
+    selected === question.correct
+      ? "correct"
+      : selected === null
+        ? "timeout"
+        : "wrong";
+  const continueLabel = isLast ? "See results" : "Continue →";
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+    <div
+      className={`mx-auto flex w-full max-w-5xl flex-col gap-4 ${
+        revealed ? "pb-32 md:pb-0" : ""
+      }`}
+    >
       {/* HUD — quit, segmented progress, difficulty + score */}
       <div className="flex items-center gap-3">
         <Link
@@ -441,7 +454,13 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         </div>
 
         {/* Image — swaps to the reveal image (e.g. the poster) once locked in */}
-        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl border-4 border-ink bg-ink shadow-[0_6px_0_0_#0d0d0d]">
+        <div
+          className={`relative w-full overflow-hidden rounded-3xl border-4 border-ink bg-ink shadow-[0_6px_0_0_#0d0d0d] ${
+            revealed
+              ? "max-md:max-h-[min(36vh,220px)] max-md:aspect-auto aspect-[16/10]"
+              : "aspect-[16/10]"
+          }`}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             aria-hidden
@@ -455,8 +474,18 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             src={displaySrc}
             alt={showReveal ? "Answer reveal" : "Guess from this image"}
             loading="lazy"
-            className="animate-quiz-pop relative h-full w-full object-contain"
+            className={`animate-quiz-pop relative h-full w-full ${
+              isMovieMode && !showReveal
+                ? "scale-105 object-cover object-center"
+                : "object-contain"
+            }`}
           />
+          {isMovieMode && !showReveal && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-ink/90 via-ink/40 to-transparent"
+            />
+          )}
         </div>
 
         {/* Question caption — overlaps the bottom edge to tie image to answers */}
@@ -539,18 +568,12 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       </div>
 
       {revealed && (
-        <div className="animate-reveal">
+        <div className="hidden animate-reveal md:block">
           <RevealCard
             category={mode.category}
             term={question.answers[question.correct]}
-            status={
-              selected === question.correct
-                ? "correct"
-                : selected === null
-                  ? "timeout"
-                  : "wrong"
-            }
-            continueLabel={isLast ? "See results" : "Continue →"}
+            status={revealStatus}
+            continueLabel={continueLabel}
             onContinue={next}
             variant="actions"
           />
@@ -560,20 +583,27 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       </div>
       </div>
 
+      {revealed && (
+        <MobileRevealBar
+          status={revealStatus}
+          continueLabel={continueLabel}
+          onContinue={next}
+          correctAnswer={
+            revealStatus !== "correct"
+              ? question.answers[question.correct]
+              : undefined
+          }
+        />
+      )}
+
       {/* Educational reveal content below the play area */}
       {revealed && (
         <div className="animate-reveal mx-auto w-full max-w-2xl">
           <RevealCard
             category={mode.category}
             term={question.answers[question.correct]}
-            status={
-              selected === question.correct
-                ? "correct"
-                : selected === null
-                  ? "timeout"
-                  : "wrong"
-            }
-            continueLabel={isLast ? "See results" : "Continue →"}
+            status={revealStatus}
+            continueLabel={continueLabel}
             onContinue={next}
             hideImage
             variant="content"

@@ -28,6 +28,9 @@ type ImageItem = {
   file_path: string;
   iso_639_1: string | null;
   vote_count?: number;
+  aspect_ratio?: number;
+  width?: number;
+  height?: number;
 };
 
 type MovieDetails = {
@@ -45,6 +48,13 @@ function authHeaders(token: string) {
   return { accept: "application/json", Authorization: `Bearer ${token}` };
 }
 
+const REVALIDATE = { next: { revalidate: 60 * 60 * 24 * 7 } } as const;
+
+/** TMDB posters are served at w500; question backdrops use w1280. */
+export function isTmdbPosterImageUrl(url: string): boolean {
+  return url.includes("image.tmdb.org") && /\/w500\//.test(url);
+}
+
 async function searchMovie(
   title: string,
   token: string,
@@ -52,7 +62,7 @@ async function searchMovie(
   const url = `${SEARCH_ENDPOINT}?query=${encodeURIComponent(title)}&include_adult=false&language=en-US&page=1`;
   const res = await fetch(url, {
     headers: authHeaders(token),
-    next: { revalidate: 60 * 60 * 24 * 7 },
+    ...REVALIDATE,
   });
   if (!res.ok) return null;
   const data = (await res.json()) as { results?: SearchResult[] };
@@ -63,15 +73,34 @@ async function searchMovie(
   );
 }
 
-// Picks a backdrop with NO language tag (textless = no title/logo overlay),
-// falling back to the most-voted backdrop available.
+async function fetchTextlessBackdrops(
+  movieId: number,
+  token: string,
+): Promise<ImageItem[]> {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${movieId}/images?include_image_language=null`,
+    { headers: authHeaders(token), ...REVALIDATE },
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as { backdrops?: ImageItem[] };
+  return data.backdrops ?? [];
+}
+
+function isLandscapeImage(item: ImageItem): boolean {
+  if (item.aspect_ratio != null) return item.aspect_ratio >= 1.2;
+  if (item.width != null && item.height != null) return item.width > item.height;
+  return true;
+}
+
+// Picks a textless landscape backdrop — never falls back to titled images.
 function pickTextlessBackdrop(backdrops: ImageItem[]): string | null {
   if (backdrops.length === 0) return null;
-  const sorted = [...backdrops].sort(
-    (a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0),
-  );
-  const textless = sorted.find((b) => b.iso_639_1 === null);
-  return (textless ?? sorted[0]).file_path;
+
+  const candidates = backdrops
+    .filter((b) => b.iso_639_1 === null && isLandscapeImage(b))
+    .sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0));
+
+  return candidates[0]?.file_path ?? null;
 }
 
 // Builds a short, spoiler-free hint and strips the title out just in case.
@@ -86,11 +115,9 @@ function buildHint(details: MovieDetails): string | null {
   if (year) parts.push(year);
 
   let teaser = (details.tagline || details.overview || "").trim();
-  // Keep it to one sentence and a sane length.
   teaser = teaser.split(/(?<=[.!?])\s/)[0] ?? teaser;
   if (teaser.length > 160) teaser = teaser.slice(0, 157).trimEnd() + "…";
 
-  // Redact the title so the hint never gives away the answer.
   const title = (details.title ?? "").trim();
   if (title) {
     const safe = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -111,21 +138,25 @@ export async function fetchMovieData(title: string): Promise<MovieData> {
     const movie = await searchMovie(title, token);
     if (!movie) return empty;
 
-    // One call gets details + the full image set.
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${movie.id}?append_to_response=images&language=en-US`,
-      { headers: authHeaders(token), next: { revalidate: 60 * 60 * 24 * 7 } },
-    );
+    const [detailsRes, textlessBackdrops] = await Promise.all([
+      fetch(
+        `https://api.themoviedb.org/3/movie/${movie.id}?append_to_response=images&language=en-US`,
+        { headers: authHeaders(token), ...REVALIDATE },
+      ),
+      fetchTextlessBackdrops(movie.id, token),
+    ]);
 
-    let backdropPath: string | null = movie.backdrop_path ?? null;
+    let backdropPath: string | null = pickTextlessBackdrop(textlessBackdrops);
     let posterPath: string | null = movie.poster_path ?? null;
     let hint: string | null = null;
 
-    if (res.ok) {
-      const details = (await res.json()) as MovieDetails;
-      const textless = pickTextlessBackdrop(details.images?.backdrops ?? []);
-      if (textless) backdropPath = textless;
-      else if (details.backdrop_path) backdropPath = details.backdrop_path;
+    if (detailsRes.ok) {
+      const details = (await detailsRes.json()) as MovieDetails;
+
+      if (!backdropPath) {
+        backdropPath = pickTextlessBackdrop(details.images?.backdrops ?? []);
+      }
+
       if (!posterPath) {
         posterPath =
           details.images?.posters?.[0]?.file_path ??
@@ -159,7 +190,6 @@ export async function fetchMovieReveal(
 ): Promise<import("./reveal/types").MovieReveal | null> {
   const facts = await fetchMovieFacts(title);
   if (!facts) return null;
-  // Require at least an overview or poster to be worth showing.
   if (!facts.overview && !facts.poster_url) return null;
   return {
     kind: "movie",
@@ -182,7 +212,7 @@ export async function fetchMovieFacts(title: string): Promise<MovieFacts | null>
     if (!movie) return null;
     const res = await fetch(
       `https://api.themoviedb.org/3/movie/${movie.id}?language=en-US`,
-      { headers: authHeaders(token), next: { revalidate: 60 * 60 * 24 * 7 } },
+      { headers: authHeaders(token), ...REVALIDATE },
     );
     if (!res.ok) return null;
     const d = (await res.json()) as MovieDetails & { vote_average?: number };

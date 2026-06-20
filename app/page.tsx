@@ -40,33 +40,40 @@ export default function Home() {
           <CategoryNav />
         </div>
 
-        {/* Hero */}
+        {/* Hero — compact on mobile so quizzes sit above the fold */}
         <section className="relative overflow-hidden rounded-3xl border-4 border-ink bg-petrol shadow-[0_6px_0_0_#0d0d0d]">
           <div className="pointer-events-none absolute inset-0 bg-quiz-pattern opacity-[0.08]" />
-          {/* Floating decorative stickers */}
+          {/* Floating decorative stickers — desktop only */}
           <span aria-hidden className="pointer-events-none absolute right-[42%] top-6 hidden rotate-12 text-4xl opacity-25 md:block">🎯</span>
           <span aria-hidden className="pointer-events-none absolute bottom-6 left-[8%] hidden -rotate-12 text-4xl opacity-20 lg:block">🧠</span>
           <span aria-hidden className="pointer-events-none absolute right-[2%] top-1/2 hidden rotate-6 text-5xl opacity-20 lg:block">🏆</span>
-          <div className="relative grid gap-7 p-6 md:grid-cols-[1.15fr_0.85fr] md:items-stretch md:gap-8 md:p-10">
-            <div className="flex flex-col items-start gap-4">
+          <div className="relative grid gap-4 p-4 md:grid-cols-[1.15fr_0.85fr] md:items-stretch md:gap-8 md:p-10">
+            <div className="flex flex-col items-start gap-3 md:gap-4">
               <span className="rounded-full border-2 border-ink bg-lime px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-ink">
                 100% free · no sign-up
               </span>
-              <h1 className="font-display text-4xl font-black leading-[1.05] text-cream md:text-5xl">
+              <h1 className="font-display text-3xl font-black leading-[1.05] text-cream md:text-5xl">
                 Thousands of quizzes.
-                <br />
+                <br className="hidden md:block" />
+                <span className="md:hidden"> </span>
                 Pick one and{" "}
                 <span className="text-sky">play</span>.
               </h1>
-              <p className="max-w-md text-base font-bold text-cream/70">
+              <p className="hidden max-w-md text-base font-bold text-cream/70 md:block">
                 Free online quiz games at Quizzical.site — geography, movie,
                 sports, and flag trivia, plus picture quizzes and an AI quiz
                 generator on any topic.
               </p>
-              <div className="mt-1 w-full max-w-lg">
+              <div className="w-full max-w-lg">
                 <HeroSearch />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/ai"
+                className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-grass px-4 py-2 text-sm font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 md:hidden"
+              >
+                ✨ AI Quiz Generator →
+              </Link>
+              <div className="hidden flex-wrap items-center gap-2 md:flex">
                 <span className="text-xs font-extrabold uppercase tracking-wide text-cream/50">
                   Trending
                 </span>
@@ -80,7 +87,7 @@ export default function Home() {
                   </Link>
                 ))}
               </div>
-              <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-1 pt-2 text-sm font-extrabold text-cream/60">
+              <div className="hidden flex-wrap items-center gap-x-5 gap-y-1 pt-2 text-sm font-extrabold text-cream/60 md:flex">
                 <span>
                   <span className="text-cream">{quizzes.length}</span> quizzes
                 </span>
@@ -92,14 +99,20 @@ export default function Home() {
                   <span className="text-cream">No ads</span> while you play
                 </span>
               </div>
+              <a
+                href="#picture-games"
+                className="text-xs font-extrabold text-cream/50 underline-offset-2 hover:text-cream hover:underline md:hidden"
+              >
+                ↓ Browse picture games
+              </a>
             </div>
 
-            <AiHeroCard />
+            <AiHeroCard className="hidden md:flex" />
           </div>
         </section>
 
         {/* Picture guessing games */}
-        <section id="picture-games" className="mt-7 scroll-mt-24">
+        <section id="picture-games" className="mt-5 scroll-mt-24 md:mt-7">
           <div className="mb-3 flex items-baseline gap-2">
             <h2 className="text-2xl font-black text-ink">
               🖼️ Picture guessing games

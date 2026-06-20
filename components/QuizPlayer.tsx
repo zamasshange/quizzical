@@ -27,6 +27,8 @@ import Button3D from "./Button3D";
 
 import RevealCard from "./RevealCard";
 
+import MobileRevealBar from "./MobileRevealBar";
+
 import { useGameSounds } from "@/lib/sound";
 
 
@@ -563,6 +565,17 @@ export default function QuizPlayer({
 
   const timerFrac = Math.max(0, timeLeft / QUESTION_SECONDS);
 
+  const isRevealed = phase === "reveal";
+
+  const revealStatus =
+    selected === question.correct
+      ? "correct"
+      : selected === null
+        ? "timeout"
+        : "wrong";
+
+  const continueLabel = isLast ? "See results" : "Continue →";
+
 
 
   const answerButtons = question.answers.map((answer, i) => {
@@ -665,7 +678,7 @@ export default function QuizPlayer({
 
         hasVisualLayout ? "max-w-5xl" : "max-w-3xl"
 
-      }`}
+      }${isRevealed ? " pb-32 md:pb-0" : ""}`}
 
     >
 
@@ -893,18 +906,12 @@ export default function QuizPlayer({
             {answerButtons}
 
             {phase === "reveal" && (
-              <div className="animate-reveal">
+              <div className="hidden animate-reveal md:block">
                 <RevealCard
                   category={quiz.category}
                   term={question.answers[question.correct]}
-                  status={
-                    selected === question.correct
-                      ? "correct"
-                      : selected === null
-                        ? "timeout"
-                        : "wrong"
-                  }
-                  continueLabel={isLast ? "See results" : "Continue →"}
+                  status={revealStatus}
+                  continueLabel={continueLabel}
                   onContinue={next}
                   variant="actions"
                 />
@@ -951,18 +958,12 @@ export default function QuizPlayer({
           </div>
 
           {phase === "reveal" && (
-            <div className="animate-reveal">
+            <div className="hidden animate-reveal md:block">
               <RevealCard
                 category={quiz.category}
                 term={question.answers[question.correct]}
-                status={
-                  selected === question.correct
-                    ? "correct"
-                    : selected === null
-                      ? "timeout"
-                      : "wrong"
-                }
-                continueLabel={isLast ? "See results" : "Continue →"}
+                status={revealStatus}
+                continueLabel={continueLabel}
                 onContinue={next}
                 variant="actions"
               />
@@ -981,19 +982,26 @@ export default function QuizPlayer({
           <RevealCard
             category={quiz.category}
             term={question.answers[question.correct]}
-            status={
-              selected === question.correct
-                ? "correct"
-                : selected === null
-                  ? "timeout"
-                  : "wrong"
-            }
-            continueLabel={isLast ? "See results" : "Continue →"}
+            status={revealStatus}
+            continueLabel={continueLabel}
             onContinue={next}
             hideImage={showQuestionImage && !!questionImageUrl}
             variant="content"
           />
         </div>
+      )}
+
+      {isRevealed && (
+        <MobileRevealBar
+          status={revealStatus}
+          continueLabel={continueLabel}
+          onContinue={next}
+          correctAnswer={
+            revealStatus !== "correct"
+              ? question.answers[question.correct]
+              : undefined
+          }
+        />
       )}
 
     </div>
