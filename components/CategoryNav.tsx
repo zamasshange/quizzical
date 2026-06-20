@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
-import { categories, getCategoryQuizCounts } from "@/lib/quizzes";
+import { categories } from "@/lib/quizzes";
+import { getCategoryBrowseCounts } from "@/lib/categoryBrowse";
 import {
   StartIcon,
   ArtIcon,
@@ -34,7 +35,7 @@ const CATEGORY_ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   trivia: TriviaIcon,
 };
 
-const categoryCounts = getCategoryQuizCounts();
+const categoryCounts = getCategoryBrowseCounts();
 
 const items: Item[] = [
   { label: "Start", href: "/", Icon: StartIcon },
@@ -70,7 +71,7 @@ export default function CategoryNav() {
                 </span>
                 {count !== undefined && (
                   <span className="text-[9px] font-extrabold tabular-nums text-ink/40 md:text-[10px]">
-                    {count} {count === 1 ? "quiz" : "quizzes"}
+                    {count} {count === 1 ? "game" : "games"}
                   </span>
                 )}
                 <span

@@ -856,7 +856,7 @@ export function getQuizzesByCategory(slug: string): Quiz[] {
   return quizzes.filter((quiz) => quiz.category === slug);
 }
 
-/** Quiz count per category slug — useful for nav badges and validation. */
+/** Quiz count per category slug — text quizzes only. */
 export function getCategoryQuizCounts(): Record<string, number> {
   return Object.fromEntries(
     categories.map((c) => [c.slug, getQuizzesByCategory(c.slug).length]),

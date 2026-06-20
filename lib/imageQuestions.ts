@@ -59,6 +59,8 @@ export type GameModeSlug =
 export type GameMode = {
   slug: GameModeSlug;
   category: ImageCategory;
+  /** Text quiz category page where this picture game is listed. */
+  quizCategorySlug: "entertainment" | "sports";
   title: string;
   emoji: string;
   color: string;
@@ -70,6 +72,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "celebrity",
     category: "Celebrity",
+    quizCategorySlug: "entertainment",
     title: "Guess the Celebrity",
     emoji: "🎭",
     color: "#b15bff",
@@ -78,6 +81,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "football",
     category: "Football",
+    quizCategorySlug: "sports",
     title: "Guess the Footballer",
     emoji: "⚽",
     color: "#00a76d",
@@ -87,6 +91,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "basketball",
     category: "Basketball",
+    quizCategorySlug: "sports",
     title: "Guess the Basketball Player",
     emoji: "🏀",
     color: "#ff6b35",
@@ -96,6 +101,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "cricket",
     category: "Cricket",
+    quizCategorySlug: "sports",
     title: "Guess the Cricketer",
     emoji: "🏏",
     color: "#2ecc71",
@@ -105,6 +111,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "athlete",
     category: "Athlete",
+    quizCategorySlug: "sports",
     title: "Guess the Athlete",
     emoji: "🏅",
     color: "#ff9f43",
@@ -114,6 +121,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "movie",
     category: "Movie",
+    quizCategorySlug: "entertainment",
     title: "Guess the Movie",
     emoji: "🎬",
     color: "#4d8dff",
@@ -122,6 +130,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
   {
     slug: "music",
     category: "Music",
+    quizCategorySlug: "entertainment",
     title: "Guess the Music Artist",
     emoji: "🎵",
     color: "#ff6b6b",
@@ -131,6 +140,12 @@ export const IMAGE_GAME_MODES: GameMode[] = [
 
 export function getGameModeBySlug(slug: string): GameMode | undefined {
   return IMAGE_GAME_MODES.find((m) => m.slug === slug);
+}
+
+export function getPictureGamesByQuizCategory(
+  categorySlug: string,
+): GameMode[] {
+  return IMAGE_GAME_MODES.filter((m) => m.quizCategorySlug === categorySlug);
 }
 
 function isPlaceholderImageUrl(url: string): boolean {

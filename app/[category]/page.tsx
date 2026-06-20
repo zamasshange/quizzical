@@ -5,6 +5,7 @@ import CategoryNav from "@/components/CategoryNav";
 import FilterChips, { type Chip } from "@/components/FilterChips";
 import QuizGrid from "@/components/QuizGrid";
 import QuizRow from "@/components/QuizRow";
+import PictureGameGrid from "@/components/PictureGameGrid";
 import Footer from "@/components/Footer";
 import {
   categories,
@@ -12,6 +13,8 @@ import {
   getQuizzesByCategory,
   quizzes,
 } from "@/lib/quizzes";
+import { getCategoryBrowseCounts } from "@/lib/categoryBrowse";
+import { getPictureGamesByQuizCategory } from "@/lib/imageQuestions";
 import JsonLd from "@/components/JsonLd";
 import { categoryMetadata } from "@/lib/seo";
 import {
@@ -42,15 +45,18 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
 
   // Only this category's quizzes — accurate, no padding with unrelated ones.
   const own = getQuizzesByCategory(found.slug).sort((a, b) => b.plays - a.plays);
+  const pictureGames = getPictureGamesByQuizCategory(found.slug);
+  const totalItems = own.length + pictureGames.length;
   const totalPlays = own.reduce((sum, q) => sum + q.plays, 0);
   const others = quizzes.filter((q) => q.category !== found.slug);
+  const browseCounts = getCategoryBrowseCounts();
 
   const chips: Chip[] = [
     { label: "All", href: "/", count: quizzes.length, emoji: "✨" },
     ...categories.map((c) => ({
       label: c.name,
       href: `/${c.slug}`,
-      count: getQuizzesByCategory(c.slug).length,
+      count: browseCounts[c.slug],
       emoji: c.emoji,
       active: c.slug === found.slug,
     })),
@@ -96,7 +102,13 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
             </h1>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-extrabold text-white/90">
               <span>
-                {own.length} {own.length === 1 ? "quiz" : "quizzes"}
+                {totalItems} {totalItems === 1 ? "game" : "games"}
+                {pictureGames.length > 0 && own.length > 0 && (
+                  <span className="font-bold text-white/70">
+                    {" "}
+                    ({own.length} quizzes · {pictureGames.length} picture)
+                  </span>
+                )}
               </span>
               <span>{totalPlays.toLocaleString()} plays</span>
               <span>Signature: {found.tag}</span>
@@ -109,10 +121,19 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
           <FilterChips chips={chips} />
         </div>
 
-        {/* This category's quizzes */}
+        {pictureGames.length > 0 && (
+          <section className="mt-6">
+            <h2 className="mb-3 text-2xl font-black text-ink">
+              🖼️ Picture guessing games
+            </h2>
+            <PictureGameGrid modes={pictureGames} />
+          </section>
+        )}
+
+        {/* This category's text quizzes */}
         <section className="mt-6">
           <h2 className="mb-3 text-2xl font-black text-ink">
-            All {found.name} quizzes
+            {pictureGames.length > 0 ? "Trivia quizzes" : `All ${found.name} quizzes`}
           </h2>
           <QuizGrid quizzes={own} />
         </section>
