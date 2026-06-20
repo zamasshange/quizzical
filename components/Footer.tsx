@@ -17,6 +17,10 @@ export default function Footer() {
         <Link href="/signin" className="hover:text-ink">
           Sign In
         </Link>
+        <span aria-hidden>•</span>
+        <Link href="/topics" className="hover:text-ink">
+          Topics
+        </Link>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-ink/50">
         <span>© {new Date().getFullYear()} BDL Corp</span>

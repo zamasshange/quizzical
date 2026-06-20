@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { Category, Quiz } from "./quizzes";
+import type { SeoTopic } from "./seoTopics";
+import { topicCount } from "./seoTopics";
 import type { GameMode } from "./imageQuestions";
 import { getCategory } from "./quizzes";
 import {
@@ -202,5 +204,45 @@ export function dashboardMetadata(): Metadata {
     path: "/dashboard",
     keywords: [],
     noIndex: true,
+  });
+}
+
+export function topicsHubMetadata(): Metadata {
+  return buildMetadata({
+    title: "Quiz Topics & SEO Keywords",
+    description: `Browse ${topicCount()} quiz topics and keywords on Quizzical.site — free online trivia by BDL Corp, Sonke AI, Zama Shange, and Burdolar. Every topic is listed in our sitemap.`,
+    path: "/topics",
+    keywords: [
+      ...BASE_KEYWORDS,
+      ...PAGE_KEYWORDS.home,
+      "quiz topics",
+      "trivia keywords",
+      "quizzical sitemap topics",
+      "Sonke AI",
+      "Zama Shange",
+      "Burdolar",
+      "BDL Corp",
+    ],
+  });
+}
+
+export function topicMetadata(topic: SeoTopic): Metadata {
+  return buildMetadata({
+    title: `${topic.keyword} — Free Online Quiz`,
+    description: `Play free ${topic.keyword} games online at Quizzical.site. BDL Corp trivia with Sonke AI, Zama Shange, and Burdolar — timed quizzes, picture games, and educational facts after every answer.`,
+    path: `/topics/${topic.slug}`,
+    keywords: [
+      ...BASE_KEYWORDS,
+      topic.keyword,
+      ...topic.related,
+      `${topic.keyword} online`,
+      `${topic.keyword} free`,
+      `${topic.keyword} game`,
+      `${topic.keyword} quiz`,
+      "Sonke AI",
+      "Zama Shange",
+      "Burdolar",
+      "BDL Corp",
+    ],
   });
 }

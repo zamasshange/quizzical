@@ -2,7 +2,9 @@ import type { MetadataRoute } from "next";
 import { categories, quizzes } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import { absoluteUrl } from "@/lib/seo";
+import { getAllSeoTopics } from "@/lib/seoTopics";
 
+/** Served at /sitemap.xml — lists every indexable URL including keyword topic pages. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
@@ -19,7 +21,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: absoluteUrl("/topics"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.88,
+    },
   ];
+
+  const topicPages: MetadataRoute.Sitemap = getAllSeoTopics().map((topic) => ({
+    url: absoluteUrl(`/topics/${topic.slug}`),
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.72,
+  }));
 
   const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
     url: absoluteUrl(`/${c.slug}`),
@@ -50,5 +65,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  return [...staticPages, ...categoryPages, ...quizPages, ...imageGames];
+  return [
+    ...staticPages,
+    ...topicPages,
+    ...categoryPages,
+    ...quizPages,
+    ...imageGames,
+  ];
 }
