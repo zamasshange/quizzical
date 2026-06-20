@@ -99,7 +99,15 @@ export function prefetchUpcoming(
 }
 
 export function quizImageFallbacks(url: string): string[] {
-  const normalized = normalizeImageUrl(url);
+  const trimmed = url?.trim() ?? "";
+  if (!trimmed) return [];
+
+  // Already proxied same-origin — use as-is (next/image cannot optimize these).
+  if (trimmed.startsWith("/api/img")) {
+    return [trimmed];
+  }
+
+  const normalized = normalizeImageUrl(trimmed);
   if (!normalized) return [];
 
   const optimized = optimizeQuizImageUrl(normalized);

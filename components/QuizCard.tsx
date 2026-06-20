@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getCategory, type Quiz, type Badge } from "@/lib/quizzes";
 import { getQuizProfile } from "@/lib/quizProfiles";
+import { quizImageFallbacks } from "@/lib/quizImageUrl";
 import { cardHover, defaultTransition, fadeUp } from "@/lib/motion";
 
 const thumbCache = new Map<string, string | null>();
@@ -49,12 +49,19 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
   const [thumbUrl, setThumbUrl] = useState<string | null>(
     () => thumbCache.get(profile.thumbnailTerm) ?? null,
   );
+  const [srcIndex, setSrcIndex] = useState(0);
+  const [showEmoji, setShowEmoji] = useState(true);
   const [hover, setHover] = useState(false);
+
+  const thumbSources = thumbUrl ? quizImageFallbacks(thumbUrl) : [];
+  const activeSrc = thumbSources[srcIndex] ?? "";
 
   useEffect(() => {
     const term = profile.thumbnailTerm;
     if (thumbCache.has(term)) {
       setThumbUrl(thumbCache.get(term) ?? null);
+      setSrcIndex(0);
+      setShowEmoji(!thumbCache.get(term));
       return;
     }
     let cancelled = false;
@@ -63,15 +70,29 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
       .then((d: { image_url?: string | null }) => {
         const url = d.image_url ?? null;
         thumbCache.set(term, url);
-        if (!cancelled) setThumbUrl(url);
+        if (!cancelled) {
+          setThumbUrl(url);
+          setSrcIndex(0);
+          setShowEmoji(!url);
+        }
       })
       .catch(() => {
         thumbCache.set(term, null);
+        if (!cancelled) setShowEmoji(true);
       });
     return () => {
       cancelled = true;
     };
   }, [profile.thumbnailTerm]);
+
+  function handleThumbError() {
+    if (srcIndex + 1 < thumbSources.length) {
+      setSrcIndex((i) => i + 1);
+      return;
+    }
+    setShowEmoji(true);
+    setThumbUrl(null);
+  }
 
   return (
     <motion.div
@@ -92,14 +113,23 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
           whileTap="tap"
           transition={defaultTransition}
         >
-          {thumbUrl ? (
+          {activeSrc ? (
             <>
-              <Image
-                src={thumbUrl}
+              {showEmoji && (
+                <span className="absolute text-6xl drop-shadow-sm md:text-7xl">
+                  {quiz.emoji}
+                </span>
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={activeSrc}
                 alt=""
-                fill
-                sizes="(max-width:768px) 50vw, 256px"
-                className="object-cover opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                onLoad={() => setShowEmoji(false)}
+                onError={handleThumbError}
+                className="absolute inset-0 h-full w-full object-cover opacity-90 transition-opacity duration-300 group-hover:opacity-100"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/50 via-ink/10 to-transparent" />
             </>
