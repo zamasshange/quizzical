@@ -14,6 +14,7 @@ import {
   isFlagsQuiz,
   FLAGS_PER_ROUND,
 } from "@/lib/flagQuiz";
+import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
 
 import { fetchQuizImage, fetchQuizImages } from "@/lib/quizImages";
 import {
@@ -98,8 +99,9 @@ function initSession(
     flagsQuiz,
     questions,
     firstImageUrl:
-      syncFlag ??
-      getPrefetchedImage(prefetchedImages, questions[0]?.imageQuery),
+      syncFlag
+        ? proxiedQuizImageUrl(syncFlag)
+        : getPrefetchedImage(prefetchedImages, questions[0]?.imageQuery),
   };
 }
 
@@ -130,11 +132,14 @@ export default function QuizPlayer({
 
   const finalBackLabel = backLabel ?? "Back to quiz";
 
-  const [session] = useState(() => initSession(quiz, prefetchedImages));
-  const flagsQuiz = session.flagsQuiz;
+  const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<ReturnType<typeof initSession> | null>(
+    null,
+  );
+  const flagsQuiz = session?.flagsQuiz ?? isFlagsQuiz(quiz.id);
   const historyKey = playHistoryKey("text", quiz.id);
 
-  const [questions, setQuestions] = useState(session.questions);
+  const [questions, setQuestions] = useState<typeof quiz.questions>([]);
 
   const [index, setIndex] = useState(0);
 
@@ -148,9 +153,7 @@ export default function QuizPlayer({
 
   const [timeLeft, setTimeLeft] = useState(QUESTION_SECONDS);
 
-  const [questionImageUrl, setQuestionImageUrl] = useState<string | null>(
-    session.firstImageUrl,
-  );
+  const [questionImageUrl, setQuestionImageUrl] = useState<string | null>(null);
 
   const [answerImageUrls, setAnswerImageUrls] = useState<(string | null)[]>([]);
 
@@ -161,12 +164,15 @@ export default function QuizPlayer({
   useQuizFinishSound(phase, correctCount, questions.length);
 
   useEffect(() => {
-    if (!flagsQuiz) {
-      recordSeen(historyKey, { ids: questions.map((q) => q.id) });
+    const next = initSession(quiz, prefetchedImages);
+    setSession(next);
+    setQuestions(next.questions);
+    setQuestionImageUrl(next.firstImageUrl);
+    if (!next.flagsQuiz) {
+      recordSeen(historyKey, { ids: next.questions.map((q) => q.id) });
     }
-    // Record the first round only on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setReady(true);
+  }, [quiz, prefetchedImages, historyKey]);
 
 
 
@@ -185,7 +191,7 @@ export default function QuizPlayer({
   const isFlagQuestion = isFlagImageQuery(question.imageQuery);
 
   const syncFlagUrl = isFlagQuestion
-    ? flagImageFromQuery(question.imageQuery!)
+    ? proxiedQuizImageUrl(flagImageFromQuery(question.imageQuery!) ?? "")
     : null;
 
   const displayQuestionImageUrl = syncFlagUrl ?? questionImageUrl;
@@ -196,13 +202,16 @@ export default function QuizPlayer({
 
     (choice: number | null) => {
 
+      const current = questions[index];
+      if (!current) return;
+
       if (choice !== null) playClick();
 
       setPhase("reveal");
 
       setSelected(choice);
 
-      if (choice !== null && choice === question.correct) {
+      if (choice !== null && choice === current.correct) {
 
         const earned = Math.round(
 
@@ -224,7 +233,7 @@ export default function QuizPlayer({
 
     },
 
-    [question, timeLeft, playCorrect, playWrong],
+    [questions, index, timeLeft, playCorrect, playWrong],
 
   );
 
@@ -234,28 +243,29 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (!visualMode) {
+    if (!ready || !visualMode) {
 
-      setQuestionImageUrl(null);
-
-      setAnswerImageUrls([]);
-
-      setImagesLoading(false);
+      if (!visualMode) {
+        setQuestionImageUrl(null);
+        setAnswerImageUrls([]);
+        setImagesLoading(false);
+      }
 
       return;
 
     }
 
-
+    const current = questions[index];
+    if (!current) return;
 
     let cancelled = false;
 
     const prefetched = getPrefetchedImage(
       prefetchedImages,
-      question.imageQuery,
+      current.imageQuery,
     );
 
-    const syncFlag = flagImageFromQuery(question.imageQuery ?? "");
+    const syncFlag = flagImageFromQuery(current.imageQuery ?? "");
 
 
 
@@ -267,11 +277,11 @@ export default function QuizPlayer({
 
 
 
-      if (showQuestionImage && question.imageQuery) {
+      if (showQuestionImage && current.imageQuery) {
 
         if (syncFlag) {
 
-          setQuestionImageUrl(syncFlag);
+          setQuestionImageUrl(proxiedQuizImageUrl(syncFlag));
 
           setImagesLoading(false);
 
@@ -289,7 +299,7 @@ export default function QuizPlayer({
 
           tasks.push(
 
-            fetchQuizImage(question.imageQuery!).then((result) => {
+            fetchQuizImage(current.imageQuery!).then((result) => {
 
               if (!cancelled && result?.image_url) {
 
@@ -317,9 +327,9 @@ export default function QuizPlayer({
 
         const queries =
 
-          question.answerImageQueries ??
+          current.answerImageQueries ??
 
-          question.answers.map((answer) => answer);
+          current.answers.map((answer) => answer);
 
         tasks.push(
 
@@ -365,19 +375,17 @@ export default function QuizPlayer({
 
   }, [
 
+    ready,
+
     index,
+
+    questions,
 
     visualMode,
 
     showQuestionImage,
 
     showAnswerImages,
-
-    question.imageQuery,
-
-    question.answerImageQueries,
-
-    question.answers,
 
     prefetchedImages,
 
@@ -389,7 +397,7 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (!flagsQuiz) return;
+    if (!ready || !flagsQuiz) return;
 
     for (const q of questions) {
 
@@ -399,13 +407,13 @@ export default function QuizPlayer({
 
         const img = new Image();
 
-        img.src = url;
+        img.src = proxiedQuizImageUrl(url);
 
       }
 
     }
 
-  }, [questions, flagsQuiz]);
+  }, [questions, flagsQuiz, ready]);
 
 
 
@@ -413,7 +421,7 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (phase !== "playing") return;
+    if (!ready || phase !== "playing") return;
 
     if (timeLeft <= 0) {
 
@@ -427,7 +435,7 @@ export default function QuizPlayer({
 
     return () => clearTimeout(t);
 
-  }, [phase, timeLeft, lockAnswer]);
+  }, [ready, phase, timeLeft, lockAnswer]);
 
 
 
@@ -457,7 +465,9 @@ export default function QuizPlayer({
     if (flagsQuiz) {
       const next = generateFlagQuestions(FLAGS_PER_ROUND);
       setQuestions(next);
-      setQuestionImageUrl(flagImageFromQuery(next[0]?.imageQuery ?? ""));
+      setQuestionImageUrl(
+        proxiedQuizImageUrl(flagImageFromQuery(next[0]?.imageQuery ?? "") ?? ""),
+      );
     } else {
       rotateExcluded(historyKey);
       const next = prepareTextQuestions(quiz, getExcluded(historyKey).ids);
@@ -471,6 +481,19 @@ export default function QuizPlayer({
     setCorrectCount(0);
     setTimeLeft(QUESTION_SECONDS);
     setPhase("playing");
+  }
+
+
+
+  if (!ready || !question) {
+    return (
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-3xl border-4 border-ink bg-white p-10 text-center shadow-[0_6px_0_0_#0d0d0d]">
+        <span className="text-5xl">{quiz.emoji}</span>
+        <p className="font-display text-xl font-extrabold text-ink/60">
+          Loading quiz…
+        </p>
+      </div>
+    );
   }
 
 

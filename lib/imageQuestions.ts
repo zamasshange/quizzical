@@ -63,7 +63,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     title: "Guess the Athlete",
     emoji: "🏅",
     color: "#ff9f43",
-    defaultQuestion: "Who is this?",
+    defaultQuestion: "Who is this athlete?",
   },
   {
     slug: "movie",

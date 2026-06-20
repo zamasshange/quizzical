@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { quizzes } from "@/lib/quizzes";
 import { playClick, useMuted } from "@/lib/sound";
@@ -7,7 +8,12 @@ import { SoundOnIcon, SoundOffIcon } from "./icons";
 
 export default function NavActions() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [muted, toggleMuted] = useMuted();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function surpriseMe() {
     playClick();
@@ -28,12 +34,12 @@ export default function NavActions() {
       <button
         type="button"
         onClick={toggleMuted}
-        aria-label={muted ? "Unmute sounds" : "Mute sounds"}
-        aria-pressed={muted}
-        title={muted ? "Sounds off" : "Sounds on"}
+        aria-label={mounted && muted ? "Unmute sounds" : "Mute sounds"}
+        aria-pressed={mounted ? muted : false}
+        title={mounted && muted ? "Sounds off" : "Sounds on"}
         className="flex h-10 w-10 items-center justify-center rounded-full text-ink/70 transition-colors hover:bg-black/5 hover:text-ink"
       >
-        {muted ? (
+        {mounted && muted ? (
           <SoundOffIcon className="h-5 w-5" />
         ) : (
           <SoundOnIcon className="h-5 w-5" />

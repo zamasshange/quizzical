@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { flagImageFromQuery } from "@/lib/countryData";
+import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
 import { fetchWikipediaSummaryWithFallback } from "@/lib/wikipedia";
 
 export type QuizImageResponse = {
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
   const flagUrl = flagImageFromQuery(term);
   if (flagUrl) {
     const result: QuizImageResponse = {
-      image_url: flagUrl,
+      image_url: proxiedQuizImageUrl(flagUrl),
       title: term,
       description: null,
     };
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
   const summary = await fetchWikipediaSummaryWithFallback(term);
   const result: QuizImageResponse = summary
     ? {
-        image_url: summary.image_url,
+        image_url: proxiedQuizImageUrl(summary.image_url),
         title: summary.title,
         description: summary.description || null,
       }

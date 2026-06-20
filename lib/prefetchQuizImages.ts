@@ -1,6 +1,7 @@
 import type { Quiz } from "./quizzes";
 import { usesQuestionImages } from "./quizzes";
 import { flagImageFromQuery } from "./countryData";
+import { proxiedQuizImageUrl } from "./quizImageUrl";
 import { fetchWikipediaSummaryWithFallback } from "./wikipedia";
 
 /** Server-side prefetch of Wikipedia images for visual quizzes. */
@@ -20,9 +21,12 @@ export async function prefetchQuestionImages(
   const entries = await Promise.all(
     queries.map(async (query) => {
       const flagUrl = flagImageFromQuery(query);
-      if (flagUrl) return [query, flagUrl] as const;
+      if (flagUrl) return [query, proxiedQuizImageUrl(flagUrl)] as const;
       const summary = await fetchWikipediaSummaryWithFallback(query);
-      return [query, summary?.image_url ?? ""] as const;
+      return [
+        query,
+        summary?.image_url ? proxiedQuizImageUrl(summary.image_url) : "",
+      ] as const;
     }),
   );
 

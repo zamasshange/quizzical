@@ -1,5 +1,7 @@
 // Client-side Wikipedia image fetching for text quizzes with visual modes.
 
+import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
+
 export type QuizImageResult = {
   image_url: string | null;
   title: string;
@@ -24,7 +26,10 @@ export async function fetchQuizImage(
     );
     if (!res.ok) return null;
     const data = (await res.json()) as QuizImageResult;
-    if (data.image_url) cache.set(key, data);
+    if (data.image_url) {
+      data.image_url = proxiedQuizImageUrl(data.image_url);
+      cache.set(key, data);
+    }
     return data;
   } catch {
     return null;

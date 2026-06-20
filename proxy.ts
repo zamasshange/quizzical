@@ -15,6 +15,14 @@ const isAuthRoute = createRouteMatcher([
   "/onboarding",
 ]);
 
+// Guest play + API JSON must never redirect to onboarding (breaks fetch/image loads).
+const isOnboardingBypass = createRouteMatcher([
+  "/api(.*)",
+  "/quiz(.*)",
+  "/play(.*)",
+  "/ai(.*)",
+]);
+
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect({ unauthenticatedUrl: "/signin" });
@@ -27,7 +35,12 @@ export default clerkMiddleware(async (auth, req) => {
     req.cookies.get(AVATAR_COOKIE_NAME)?.value,
   );
 
-  if (userId && !isAuthRoute(req) && !avatarId) {
+  if (
+    userId &&
+    !isAuthRoute(req) &&
+    !isOnboardingBypass(req) &&
+    !avatarId
+  ) {
     return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 });

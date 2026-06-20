@@ -31,7 +31,8 @@ export async function saveAvatarSelection(avatarId: string): Promise<{ ok: true 
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 120,
+    // Bridge until Clerk JWT picks up publicMetadata.avatarId (can take a session refresh).
+    maxAge: 60 * 60 * 24 * 365,
   });
 
   revalidatePath("/");

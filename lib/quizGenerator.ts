@@ -14,6 +14,11 @@ import { fetchMovieData, isTmdbPosterImageUrl } from "./tmdb";
 import { getCachedQuiz, saveCachedQuiz, getCachedByCategory } from "./quizCache";
 import { getCandidatePool, saveCandidatePool } from "./candidateCache";
 import {
+  ATHLETE_AI_SPORT_RULE,
+  ATHLETE_KIND_LABEL,
+  isMajorTeamSportAthlete,
+} from "./athleteSports";
+import {
   isAllowedQuizImageUrl,
   normalizeImageUrl,
   optimizeQuizImageUrl,
@@ -60,18 +65,18 @@ const POOLS: Record<string, Pool> = {
   Athlete: {
     question: "Who is this?",
     entries: [
-      { label: "Lionel Messi", query: "Lionel Messi" },
-      { label: "Cristiano Ronaldo", query: "Cristiano Ronaldo" },
-      { label: "Kylian Mbappé", query: "Kylian Mbappé" },
       { label: "Serena Williams", query: "Serena Williams" },
-      { label: "LeBron James", query: "LeBron James" },
-      { label: "Usain Bolt", query: "Usain Bolt" },
       { label: "Roger Federer", query: "Roger Federer" },
-      { label: "Neymar", query: "Neymar" },
-      { label: "Michael Jordan", query: "Michael Jordan" },
       { label: "Rafael Nadal", query: "Rafael Nadal" },
-      { label: "Tom Brady", query: "Tom Brady" },
-      { label: "Virat Kohli", query: "Virat Kohli" },
+      { label: "Naomi Osaka", query: "Naomi Osaka" },
+      { label: "Usain Bolt", query: "Usain Bolt" },
+      { label: "Eliud Kipchoge", query: "Eliud Kipchoge" },
+      { label: "Simone Biles", query: "Simone Biles" },
+      { label: "Michael Phelps", query: "Michael Phelps" },
+      { label: "Lewis Hamilton", query: "Lewis Hamilton" },
+      { label: "Tiger Woods", query: "Tiger Woods" },
+      { label: "Ian Thorpe", query: "Ian Thorpe" },
+      { label: "Chloe Kim", query: "Chloe Kim" },
     ],
   },
   Movie: {
@@ -151,7 +156,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 const AI_KIND: Record<string, string> = {
   Celebrity: "famous actors and celebrities",
-  Athlete: "famous athletes and sports stars",
+  Athlete: ATHLETE_KIND_LABEL,
   Movie: "famous movies",
   Music: "famous music artists or bands",
 };
@@ -195,11 +200,13 @@ async function aiCandidates(
   const kind = AI_KIND[category] ?? category;
   const seed = Math.floor(Math.random() * 1_000_000);
   const isMovie = category === "Movie";
+  const isAthlete = category === "Athlete";
 
   try {
     const prompt =
       `Generate ${count} ${kind} for a "guess from a photo" game. ` +
       `${DIFFICULTY_BRIEF[difficulty]}. ` +
+      (isAthlete ? `${ATHLETE_AI_SPORT_RULE} ` : "") +
       `For EACH one, also provide exactly 3 decoy answers (wrong but plausible). ` +
       `${decoyBrief(category, difficulty)} ` +
       `Decoys must be real and must NOT equal the correct answer. ` +
@@ -251,7 +258,8 @@ async function aiCandidates(
         out.push({ name, decoys });
       }
     }
-    return out.length > 0 ? out : null;
+    const filtered = out.filter((c) => !isMajorTeamSportAthlete(c.name));
+    return filtered.length > 0 ? filtered : null;
   } catch {
     return null;
   }
@@ -293,6 +301,7 @@ async function workingEntries(
   const addEntry = (e: PoolEntry) => {
     const key = e.label.toLowerCase();
     if (!e.label || seen.has(key) || blocked.answers.has(key)) return;
+    if (category === "Athlete" && isMajorTeamSportAthlete(e.label)) return;
     seen.add(key);
     merged.push(e);
   };
@@ -377,8 +386,19 @@ async function generateForEntry(
   entry: PoolEntry,
   fallbackDistractors: string[],
 ): Promise<GeneratedQuestion | null> {
-  const decoysFor = (correct: string) =>
-    finalizeWrongAnswers(correct, entry.decoys ?? [], fallbackDistractors);
+  if (category === "Athlete" && isMajorTeamSportAthlete(entry.label)) return null;
+
+  const decoysFor = (correct: string) => {
+    const pool =
+      category === "Athlete"
+        ? fallbackDistractors.filter((d) => !isMajorTeamSportAthlete(d))
+        : fallbackDistractors;
+    const preferred =
+      category === "Athlete"
+        ? (entry.decoys ?? []).filter((d) => !isMajorTeamSportAthlete(d))
+        : (entry.decoys ?? []);
+    return finalizeWrongAnswers(correct, preferred, pool);
+  };
   // 1. Cache first.
   let cached = await getCachedQuiz(entry.label, category);
   if (cached) {
@@ -502,14 +522,31 @@ export async function generateImageQuizBatch(
   for (const row of cachedRows) {
     if (results.length >= count) break;
     if (!row.image_url?.trim() || !isAllowedQuizImageUrl(row.image_url)) continue;
+    if (category === "Athlete" && isMajorTeamSportAthlete(row.correct_answer))
+      continue;
     const answerKey = row.correct_answer.toLowerCase();
     if (usedAnswer.has(answerKey) || usedImage.has(row.image_url)) continue;
     usedAnswer.add(answerKey);
     usedImage.add(row.image_url);
     const wrong =
-      row.wrong_answers.length >= 3
-        ? row.wrong_answers
-        : finalizeWrongAnswers(row.correct_answer, [], distractors);
+      category === "Athlete"
+        ? (row.wrong_answers.length >= 3
+            ? row.wrong_answers
+            : finalizeWrongAnswers(row.correct_answer, [], distractors)
+          ).filter((w) => !isMajorTeamSportAthlete(w))
+        : row.wrong_answers.length >= 3
+          ? row.wrong_answers
+          : finalizeWrongAnswers(row.correct_answer, [], distractors);
+    const safeWrong =
+      category === "Athlete"
+        ? finalizeWrongAnswers(
+            row.correct_answer,
+            wrong,
+            distractors.filter((d) => !isMajorTeamSportAthlete(d)),
+          )
+        : wrong.length >= 3
+          ? wrong.slice(0, 3)
+          : finalizeWrongAnswers(row.correct_answer, wrong, distractors);
     results.push(
       buildQuestion({
         id: row.id,
@@ -517,7 +554,7 @@ export async function generateImageQuizBatch(
         image_url: row.image_url,
         description: row.description,
         correct_answer: row.correct_answer,
-        wrong_answers: wrong,
+        wrong_answers: safeWrong,
         poster_url: row.poster_url,
         hint: row.hint,
       }),
