@@ -11,9 +11,10 @@ export const clerkAppearance = {
     fontFamily: "var(--font-nunito), system-ui, sans-serif",
   },
   elements: {
-    rootBox: "w-full",
-    cardBox: "w-full shadow-none",
-    card: "border-0 bg-transparent p-0 shadow-none",
+    rootBox: "mx-auto flex w-full justify-center",
+    cardBox: "mx-auto w-full max-w-full shadow-none",
+    card: "mx-auto w-full border-0 bg-transparent p-0 shadow-none",
+    main: "mx-auto w-full gap-4",
     header: "hidden",
     headerTitle: "font-display text-3xl font-extrabold",
     headerSubtitle: "font-semibold text-ink/60",

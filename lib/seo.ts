@@ -197,6 +197,17 @@ export function signInMetadata(): Metadata {
   });
 }
 
+export function signUpMetadata(): Metadata {
+  return buildMetadata({
+    title: "Sign Up — Join Quizzical",
+    description:
+      "Create a free Quizzical account by BDL Corp to track quiz scores, pick your avatar, and save progress across trivia games.",
+    path: "/signup",
+    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.signup],
+    noIndex: true,
+  });
+}
+
 export function dashboardMetadata(): Metadata {
   return buildMetadata({
     title: "Dashboard",

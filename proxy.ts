@@ -9,7 +9,11 @@ const isProtectedRoute = createRouteMatcher([
   "/api/admin(.*)",
 ]);
 
-const isAuthRoute = createRouteMatcher(["/signin(.*)", "/onboarding"]);
+const isAuthRoute = createRouteMatcher([
+  "/signin(.*)",
+  "/signup(.*)",
+  "/onboarding",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {

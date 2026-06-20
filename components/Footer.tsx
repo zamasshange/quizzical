@@ -14,6 +14,10 @@ export default function Footer() {
         <span aria-hidden>•</span>
         <span>Burdolar</span>
         <span aria-hidden>•</span>
+        <Link href="/signup" className="hover:text-ink">
+          Sign Up
+        </Link>
+        <span aria-hidden>•</span>
         <Link href="/signin" className="hover:text-ink">
           Sign In
         </Link>

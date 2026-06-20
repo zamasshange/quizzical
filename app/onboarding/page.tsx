@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   const { userId, sessionClaims } = await auth();
 
   if (!userId) {
-    redirect("/signin");
+    redirect("/signup");
   }
 
   if (getAvatarIdFromClaims(sessionClaims)) {

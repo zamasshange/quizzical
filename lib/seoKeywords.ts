@@ -204,6 +204,15 @@ export const PAGE_KEYWORDS = {
     "track trivia progress",
     "quiz player account",
   ],
+  signup: [
+    ...BRAND_KEYWORDS,
+    "quizzical sign up",
+    "quizzical register",
+    "create quiz account",
+    "free quiz account",
+    "join quizzical",
+    "quiz player signup",
+  ],
 };
 
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {

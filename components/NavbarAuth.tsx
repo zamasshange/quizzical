@@ -6,8 +6,11 @@ import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { AccountIcon } from "./icons";
 import { getAvatarSrc } from "@/lib/avatars";
 
-const signInClassName =
+const authButtonClassName =
   "flex h-10 items-center gap-1.5 rounded-full border-2 border-ink bg-white px-3 text-sm font-extrabold text-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-4";
+
+const signInLinkClassName =
+  "hidden text-sm font-extrabold text-ink/60 transition-colors hover:text-ink sm:inline";
 
 function CustomUserButton() {
   const { user } = useUser();
@@ -52,9 +55,12 @@ export default function NavbarAuth() {
   return (
     <>
       <Show when="signed-out">
-        <Link href="/signin" className={signInClassName} aria-label="Sign in">
+        <Link href="/signin" className={signInLinkClassName}>
+          Sign in
+        </Link>
+        <Link href="/signup" className={authButtonClassName} aria-label="Sign up">
           <AccountIcon className="h-4 w-4 shrink-0" />
-          <span>Sign In</span>
+          <span>Sign Up</span>
         </Link>
       </Show>
       <Show when="signed-in">

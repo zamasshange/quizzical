@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { label: "Browse", href: "/" },
   { label: "Picture games", href: "/#picture-games" },
   { label: "AI Quiz", href: "/ai" },
-  { label: "Sign In", href: "/signin" },
+  { label: "Sign Up", href: "/signup" },
 ];
 
 export default function Navbar() {
