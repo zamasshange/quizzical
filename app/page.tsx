@@ -15,7 +15,7 @@ import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import PictureGameGrid from "@/components/PictureGameGrid";
 import HomeGameHub from "@/components/HomeGameHub";
 import JsonLd from "@/components/JsonLd";
-import { homeMetadata } from "@/lib/seo";
+import { homeMetadata, SITE_TAGLINE } from "@/lib/seo";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seoStructuredData";
 
 export const metadata: Metadata = homeMetadata();
@@ -54,16 +54,14 @@ export default function Home() {
                 100% free · no sign-up
               </span>
               <h1 className="font-display text-3xl font-black leading-[1.05] text-cream md:text-5xl">
-                Thousands of quizzes.
+                Quizzical.
                 <br className="hidden md:block" />
-                <span className="md:hidden"> </span>
-                Pick one and{" "}
-                <span className="text-sky">play</span>.
+                <span className="text-sky"> {SITE_TAGLINE}</span>
               </h1>
               <p className="hidden max-w-md text-base font-bold text-cream/70 md:block">
-                Free online quiz games at Quizzical.site — geography, movie,
-                sports, and flag trivia, plus picture quizzes and an AI quiz
-                generator on any topic.
+                The quizzical games site at quizzical.site — picture quizzes,
+                trivia, flags, sports, movies, and AI games. Learn something new
+                after every answer.
               </p>
               <div className="w-full max-w-lg">
                 <HeroSearch />

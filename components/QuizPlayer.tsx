@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import type { Quiz } from "@/lib/quizzes";
+import { getQuizProfile, getRevealCategory } from "@/lib/quizProfiles";
 import { usesAnswerImages, usesQuestionImages } from "@/lib/quizzes";
 import { flagImageFromQuery, isFlagImageQuery } from "@/lib/countryData";
 import {
@@ -144,6 +145,8 @@ export default function QuizPlayer({
   const finalBackHref = backHref ?? `/quiz/${quiz.id}`;
 
   const finalBackLabel = backLabel ?? "Back to quiz";
+
+  const revealCategory = getRevealCategory(quiz);
 
   const router = useRouter();
   const completeGame = useCompleteGame();
@@ -1090,7 +1093,7 @@ export default function QuizPlayer({
             {phase === "reveal" && (
               <div className="hidden animate-reveal md:block">
                 <RevealCard
-                  category={quiz.category}
+                  category={revealCategory}
                   term={question.answers[question.correct]}
                   status={revealStatus}
                   continueLabel={continueLabel}
@@ -1142,7 +1145,7 @@ export default function QuizPlayer({
           {phase === "reveal" && (
             <div className="hidden animate-reveal md:block">
               <RevealCard
-                category={quiz.category}
+                category={revealCategory}
                 term={question.answers[question.correct]}
                 status={revealStatus}
                 continueLabel={continueLabel}
@@ -1162,7 +1165,7 @@ export default function QuizPlayer({
       {phase === "reveal" && (
         <div className="animate-reveal">
           <RevealCard
-            category={quiz.category}
+            category={revealCategory}
             term={question.answers[question.correct]}
             status={revealStatus}
             continueLabel={continueLabel}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Nunito, Baloo_2 } from "next/font/google";
 import "./globals.css";
-import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
+import { SITE_NAME, SITE_URL, absoluteUrl, SITE_TAGLINE } from "@/lib/seo";
 import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
 
 const nunito = Nunito({
@@ -20,11 +20,11 @@ const baloo = Baloo_2({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Free Online Quiz Games & Trivia`,
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Play free quiz games online at Quizzical.site by BDL Corp — geography, movies, sports, flags, picture quizzes, and AI trivia from Sonke AI. Created by Zama Shange and Burdolar.",
+    "Quizzical (quizzical.site) — free quiz games online. Picture quizzes, trivia, flags, sports, movies, and AI games by BDL Corp. Play quizzical games and learn after every answer.",
   applicationName: SITE_NAME,
   keywords: [...BASE_KEYWORDS, ...BRAND_KEYWORDS],
   authors: [
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Free Online Quiz Games & Trivia`,
+    title: `${SITE_NAME} — Quizzical Games Online`,
     description:
-      "Play free quiz games online — geography, movies, sports, flags, celebrities, and AI-generated trivia.",
+      "Quizzical games — free picture quizzes, trivia, flags, sports, and AI quiz generator at quizzical.site.",
     images: [
       {
         url: absoluteUrl("/logo.png"),
@@ -55,8 +55,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Free Online Quiz Games`,
-    description: "Free online trivia and picture quiz games at Quizzical.site.",
+    title: `${SITE_NAME} — Quizzical Games`,
+    description: "Quizzical games — free quiz and trivia at quizzical.site.",
     images: [absoluteUrl("/logo.png")],
   },
   robots: { index: true, follow: true },

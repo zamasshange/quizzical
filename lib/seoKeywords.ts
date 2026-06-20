@@ -2,6 +2,17 @@
 
 /** Brand and creator keywords — included on every indexed page. */
 export const BRAND_KEYWORDS = [
+  "quizzical",
+  "Quizzical",
+  "quizzical games",
+  "Quizzical games",
+  "quizzical quiz",
+  "Quizzical quiz",
+  "quizzical.site",
+  "quizzical online",
+  "play quizzical",
+  "quizzical trivia",
+  "quizzical free",
   "Sonke AI",
   "SonkeAI",
   "Zama Shange",

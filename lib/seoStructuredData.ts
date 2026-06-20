@@ -15,10 +15,15 @@ export function websiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
-    alternateName: ["Quizzical.site", "Quizzical quiz games"],
+    alternateName: [
+      "Quizzical.site",
+      "Quizzical games",
+      "Quizzical quiz games",
+      "quizzical games",
+    ],
     url: SITE_URL,
     description:
-      "Free online quiz games and trivia by BDL Corp — geography, movies, sports, flags, picture quizzes, and AI-generated quizzes powered by Sonke AI.",
+      "Quizzical — free quiz games at quizzical.site. Picture quizzes, trivia, flags, sports, movies, and AI-generated games by BDL Corp.",
     inLanguage: "en",
     publisher: BDL_CORP,
     creator: [

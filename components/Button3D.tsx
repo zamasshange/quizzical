@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { playClick } from "@/lib/sound";
 
 type Variant = "grass" | "sky" | "lime" | "ink" | "white";
@@ -38,6 +39,8 @@ type LinkProps = CommonProps & {
   href: string;
 };
 
+const MotionLink = motion.create(Link);
+
 export default function Button3D(props: ButtonProps | LinkProps) {
   const { children, variant = "grass", size = "md", className = "" } = props;
 
@@ -58,24 +61,37 @@ export default function Button3D(props: ButtonProps | LinkProps) {
 
   const wrapper = `group relative inline-flex select-none touch-manipulation outline-none ${className}`;
 
+  const motionProps = {
+    whileHover: { scale: 1.04, filter: "brightness(1.05)" },
+    whileTap: { scale: 0.96 },
+    transition: { type: "spring" as const, stiffness: 420, damping: 22 },
+  };
+
   if ("href" in props && props.href !== undefined) {
     return (
-      <Link href={props.href} className={wrapper}>
+      <MotionLink
+        href={props.href}
+        className={wrapper}
+        whileHover={{ scale: 1.04, filter: "brightness(1.05)" }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ type: "spring", stiffness: 420, damping: 22 }}
+      >
         {inner}
-      </Link>
+      </MotionLink>
     );
   }
 
   return (
-    <button
+    <motion.button
       type={props.type ?? "button"}
       onClick={() => {
         playClick();
         props.onClick?.();
       }}
       className={wrapper}
+      {...motionProps}
     >
       {inner}
-    </button>
+    </motion.button>
   );
 }

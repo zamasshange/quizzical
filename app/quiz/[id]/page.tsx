@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import Button3D from "@/components/Button3D";
 import { getCategory, getQuiz, quizzes } from "@/lib/quizzes";
+import { getQuizProfile } from "@/lib/quizProfiles";
 import { FLAGS_PER_ROUND, isFlagsQuiz } from "@/lib/flagQuiz";
 import { COUNTRY_COUNT } from "@/lib/allCountries";
 import JsonLd from "@/components/JsonLd";
@@ -33,6 +34,7 @@ export default async function QuizOverviewPage(
   }
 
   const category = getCategory(quiz.category);
+  const profile = getQuizProfile(quiz);
   const questionCount = isFlagsQuiz(quiz.id)
     ? FLAGS_PER_ROUND
     : quiz.questions.length;
@@ -97,11 +99,29 @@ export default async function QuizOverviewPage(
               <div className="h-8 w-px bg-ink/20" />
               <div className="text-center">
                 <div className="font-display text-2xl text-ink">
+                  {profile.difficulty}
+                </div>
+                <div className="text-xs uppercase tracking-wide">Difficulty</div>
+              </div>
+              <div className="h-8 w-px bg-ink/20" />
+              <div className="text-center">
+                <div className="font-display text-2xl text-ink">
+                  {quiz.rating.toFixed(1)}
+                </div>
+                <div className="text-xs uppercase tracking-wide">Rating</div>
+              </div>
+              <div className="h-8 w-px bg-ink/20" />
+              <div className="text-center">
+                <div className="font-display text-2xl text-ink">
                   {quiz.plays.toLocaleString()}
                 </div>
                 <div className="text-xs uppercase tracking-wide">Plays</div>
               </div>
             </div>
+
+            <p className="max-w-md text-center text-sm font-semibold text-ink/50">
+              {profile.previewFact}
+            </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button3D href={`/quiz/${quiz.id}/play`} variant="grass" size="lg">

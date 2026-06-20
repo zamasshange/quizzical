@@ -1,5 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { getCategory, type Quiz, type Badge } from "@/lib/quizzes";
+import { getQuizProfile } from "@/lib/quizProfiles";
+import { cardHover, defaultTransition, fadeUp } from "@/lib/motion";
+
+const thumbCache = new Map<string, string | null>();
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -22,35 +31,121 @@ function BadgePill({ badge }: { badge: Badge }) {
   const { label, className } = map[badge];
   return (
     <span
-      className={`absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${className}`}
+      className={`absolute left-2 top-2 z-10 rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${className}`}
     >
       {label}
     </span>
   );
 }
 
-export default function QuizCard({ quiz }: { quiz: Quiz }) {
+type Props = {
+  quiz: Quiz;
+  index?: number;
+};
+
+export default function QuizCard({ quiz, index = 0 }: Props) {
   const tag = getCategory(quiz.category)?.tag ?? "Trivia quiz";
+  const profile = getQuizProfile(quiz);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(
+    () => thumbCache.get(profile.thumbnailTerm) ?? null,
+  );
+  const [hover, setHover] = useState(false);
+
+  useEffect(() => {
+    const term = profile.thumbnailTerm;
+    if (thumbCache.has(term)) {
+      setThumbUrl(thumbCache.get(term) ?? null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/quiz-image?term=${encodeURIComponent(term)}`)
+      .then((r) => r.json())
+      .then((d: { image_url?: string | null }) => {
+        const url = d.image_url ?? null;
+        thumbCache.set(term, url);
+        if (!cancelled) setThumbUrl(url);
+      })
+      .catch(() => {
+        thumbCache.set(term, null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.thumbnailTerm]);
+
   return (
-    <Link href={`/quiz/${quiz.id}`} className="group flex flex-col">
-      <div
-        className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d] transition-all duration-100 group-hover:-translate-y-1 group-hover:shadow-[0_7px_0_0_#0d0d0d]"
-        style={{ backgroundColor: quiz.color }}
-      >
-        <span className="text-6xl drop-shadow-sm md:text-7xl">{quiz.emoji}</span>
-        {quiz.badge && <BadgePill badge={quiz.badge} />}
-      </div>
-      <div className="flex flex-col gap-0.5 pt-2.5">
-        <h3 className="line-clamp-2 text-base font-extrabold leading-tight text-ink">
-          {quiz.title}
-        </h3>
-        <div className="flex items-center gap-2">
-          <Stars rating={quiz.rating} />
-          <span className="truncate text-xs font-extrabold uppercase tracking-wide text-ink/45">
-            {tag}
-          </span>
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      animate="visible"
+      transition={{ ...defaultTransition, delay: index * 0.06 }}
+      onHoverStart={() => setHover(true)}
+      onHoverEnd={() => setHover(false)}
+    >
+      <Link href={`/quiz/${quiz.id}`} className="group flex flex-col">
+        <motion.div
+          className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d]"
+          style={{ backgroundColor: quiz.color }}
+          variants={cardHover}
+          initial="rest"
+          whileHover="hover"
+          whileTap="tap"
+          transition={defaultTransition}
+        >
+          {thumbUrl ? (
+            <>
+              <Image
+                src={thumbUrl}
+                alt=""
+                fill
+                sizes="(max-width:768px) 50vw, 256px"
+                className="object-cover opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/50 via-ink/10 to-transparent" />
+            </>
+          ) : (
+            <span className="text-6xl drop-shadow-sm md:text-7xl">{quiz.emoji}</span>
+          )}
+          {quiz.badge && <BadgePill badge={quiz.badge} />}
+
+          {/* Smart hover preview */}
+          <motion.div
+            className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-xl border-2 border-ink/80 bg-white/95 p-2.5 shadow-[0_3px_0_0_#0d0d0d] backdrop-blur-sm"
+            initial={false}
+            animate={{ opacity: hover ? 1 : 0, y: hover ? 0 : 8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <p className="line-clamp-1 text-xs font-extrabold text-ink">
+              {profile.previewTitle}
+            </p>
+            <p className="line-clamp-2 text-[10px] font-semibold leading-snug text-ink/60">
+              {profile.previewDetail}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              <span className="rounded-md bg-lime/80 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-ink">
+                {profile.difficulty}
+              </span>
+              <span className="rounded-md bg-cream px-1.5 py-0.5 text-[9px] font-bold text-ink/55">
+                {profile.questionLabel}
+              </span>
+            </div>
+          </motion.div>
+        </motion.div>
+        <div className="flex flex-col gap-0.5 pt-2.5">
+          <h3 className="line-clamp-2 text-base font-extrabold leading-tight text-ink">
+            {quiz.title}
+          </h3>
+          <div className="flex items-center gap-2">
+            <Stars rating={quiz.rating} />
+            <span className="truncate text-xs font-extrabold uppercase tracking-wide text-ink/45">
+              {tag}
+            </span>
+          </div>
+          <p className="line-clamp-1 text-[10px] font-semibold text-ink/40">
+            {quiz.plays.toLocaleString()} plays · {profile.difficulty}
+          </p>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }

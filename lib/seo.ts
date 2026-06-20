@@ -13,6 +13,7 @@ import {
 } from "./seoKeywords";
 
 export const SITE_NAME = "Quizzical";
+export const SITE_TAGLINE = "Play. Learn. Level Up.";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://quizzical.site";
 
@@ -78,11 +79,22 @@ export function buildMetadata({
 
 export function homeMetadata(): Metadata {
   return buildMetadata({
-    title: "Free Online Quiz Games & Trivia",
+    title: `Quizzical Games — ${SITE_TAGLINE}`,
     description:
-      "Play free quiz games online at Quizzical.site by BDL Corp — geography, movies, sports, flags, celebrities, and AI-generated trivia powered by Sonke AI. Learn something new after every answer.",
+      "Quizzical is the free quiz games site at quizzical.site — picture quizzes, trivia, flags, sports, movies, celebrities, and AI-generated games by BDL Corp. Learn something new after every answer.",
     path: "/",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.home],
+    keywords: [
+      "quizzical",
+      "quizzical games",
+      "quizzical quiz",
+      "quizzical.site",
+      "Quizzical quiz games",
+      "play quizzical",
+      "quizzical online",
+      "quizzical trivia",
+      ...BASE_KEYWORDS,
+      ...PAGE_KEYWORDS.home,
+    ],
   });
 }
 
@@ -109,7 +121,7 @@ export function quizMetadata(quiz: Quiz): Metadata {
   const isFlags = quiz.id === "flags-of-the-world";
 
   return buildMetadata({
-    title: `${quiz.title} Quiz — Play Free Online`,
+    title: `${quiz.title} — Quizzical Games`,
     description: isFlags
       ? `Play Flags of the World free online — 197 countries, random flags every game, no repeats. Guess country flags with instant feedback and learn facts after each answer.`
       : `${quiz.description} Play ${quiz.title} free on Quizzical — timed trivia with educational reveal cards. ${cat?.tag ?? "Quiz"} category.`,
