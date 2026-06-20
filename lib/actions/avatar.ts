@@ -1,8 +1,10 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { isValidAvatarId } from "@/lib/avatars";
+import { AVATAR_COOKIE_NAME } from "@/lib/userMetadata";
 
 export async function saveAvatarSelection(avatarId: string): Promise<{ ok: true }> {
   const { userId } = await auth();
@@ -15,8 +17,21 @@ export async function saveAvatarSelection(avatarId: string): Promise<{ ok: true 
   }
 
   const client = await clerkClient();
-  await client.users.updateUserMetadata(userId, {
-    publicMetadata: { avatarId },
+  try {
+    await client.users.updateUserMetadata(userId, {
+      publicMetadata: { avatarId },
+    });
+  } catch {
+    throw new Error("Could not save your avatar. Please try again.");
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(AVATAR_COOKIE_NAME, avatarId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 120,
   });
 
   revalidatePath("/");

@@ -1,35 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useState } from "react";
+import { useSession, useUser } from "@clerk/nextjs";
 import { playClick } from "@/lib/sound";
 import { AVATARS } from "@/lib/avatars";
 import { saveAvatarSelection } from "@/lib/actions/avatar";
 
 export default function AvatarPicker() {
-  const router = useRouter();
   const { user } = useUser();
+  const { session } = useSession();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
 
-  function handleSubmit() {
-    if (!selectedId) return;
+  async function handleSubmit() {
+    if (!selectedId || isSaving) return;
 
     playClick();
     setError(null);
-    startTransition(async () => {
-      try {
-        await saveAvatarSelection(selectedId);
-        await user?.reload();
-        router.push("/");
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong.");
-      }
-    });
+    setIsSaving(true);
+
+    try {
+      await saveAvatarSelection(selectedId);
+      await session?.reload();
+      await user?.reload();
+      window.location.assign("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -53,7 +53,7 @@ export default function AvatarPicker() {
               type="button"
               aria-label={avatar.label}
               aria-pressed={isSelected}
-              disabled={isPending}
+              disabled={isSaving}
               onClick={() => {
                 playClick();
                 setSelectedId(avatar.id);
@@ -87,11 +87,11 @@ export default function AvatarPicker() {
 
       <button
         type="button"
-        disabled={!selectedId || isPending}
-        onClick={handleSubmit}
+        disabled={!selectedId || isSaving}
+        onClick={() => void handleSubmit()}
         className="rounded-full border-4 border-ink bg-grass px-6 py-3 font-extrabold text-white shadow-[0_4px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
       >
-        {isPending ? "Saving…" : "Let's go!"}
+        {isSaving ? "Saving…" : "Let's go!"}
       </button>
     </div>
   );
