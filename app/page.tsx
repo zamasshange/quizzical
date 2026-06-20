@@ -9,7 +9,6 @@ import Footer from "@/components/Footer";
 import {
   homeRows,
   categories,
-  getQuizzesByCategory,
   quizzes,
 } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
@@ -149,19 +148,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Quiz rows */}
+        {/* Curated quiz rows — full category lists live on /[category] via nav above */}
         {homeRows.map((row) => (
           <QuizRow key={row.title} title={row.title} quizzes={row.quizzes} />
-        ))}
-
-        {/* Category rows */}
-        {categories.map((cat) => (
-          <QuizRow
-            key={cat.slug}
-            title={`${cat.emoji} ${cat.name}`}
-            quizzes={getQuizzesByCategory(cat.slug)}
-            seeAllHref={`/${cat.slug}`}
-          />
         ))}
       </main>
 
