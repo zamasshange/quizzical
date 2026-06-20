@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useUser } from "@clerk/nextjs";
+import { playClick } from "@/lib/sound";
 import { AVATARS } from "@/lib/avatars";
 import { saveAvatarSelection } from "@/lib/actions/avatar";
 
@@ -17,6 +18,7 @@ export default function AvatarPicker() {
   function handleSubmit() {
     if (!selectedId) return;
 
+    playClick();
     setError(null);
     startTransition(async () => {
       try {
@@ -52,7 +54,10 @@ export default function AvatarPicker() {
               aria-label={avatar.label}
               aria-pressed={isSelected}
               disabled={isPending}
-              onClick={() => setSelectedId(avatar.id)}
+              onClick={() => {
+                playClick();
+                setSelectedId(avatar.id);
+              }}
               className={`group flex flex-col items-center gap-1.5 rounded-2xl border-4 bg-cream p-2 transition-transform hover:-translate-y-0.5 disabled:opacity-60 sm:p-2.5 ${
                 isSelected
                   ? "border-ink ring-4 ring-ink ring-offset-2"

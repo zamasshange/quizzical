@@ -1,6 +1,7 @@
 "use client";
 
 import type { RevealStatus } from "./RevealCard";
+import { playClick } from "@/lib/sound";
 
 type Props = {
   status: RevealStatus;
@@ -47,7 +48,10 @@ export default function MobileRevealBar({
       <div className="px-4 pt-3">
         <button
           type="button"
-          onClick={onContinue}
+          onClick={() => {
+            playClick();
+            onContinue();
+          }}
           className="w-full rounded-2xl border-4 border-ink bg-ink py-3.5 font-display text-base font-extrabold tracking-wide text-white shadow-[0_4px_0_0_#0d0d0d] transition-transform active:translate-y-1 active:shadow-none"
         >
           {continueLabel}

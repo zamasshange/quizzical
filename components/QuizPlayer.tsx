@@ -29,7 +29,7 @@ import RevealCard from "./RevealCard";
 
 import MobileRevealBar from "./MobileRevealBar";
 
-import { useGameSounds } from "@/lib/sound";
+import { playClick, useGameSounds, useQuizFinishSound } from "@/lib/sound";
 
 
 
@@ -158,6 +158,8 @@ export default function QuizPlayer({
 
   const { playCorrect, playWrong } = useGameSounds();
 
+  useQuizFinishSound(phase, correctCount, questions.length);
+
   useEffect(() => {
     if (!flagsQuiz) {
       recordSeen(historyKey, { ids: questions.map((q) => q.id) });
@@ -193,6 +195,8 @@ export default function QuizPlayer({
   const lockAnswer = useCallback(
 
     (choice: number | null) => {
+
+      if (choice !== null) playClick();
 
       setPhase("reveal");
 

@@ -5,7 +5,7 @@ import type { FactReveal, RevealData } from "@/lib/reveal/types";
 import { PlayerRevealCard, TeamRevealCard } from "./reveal/SportsRevealCard";
 import { MovieRevealCard } from "./reveal/MovieRevealCard";
 import { CountryRevealCard } from "./reveal/CountryRevealCard";
-import { useMuted } from "@/lib/sound";
+import { playClick, useMuted } from "@/lib/sound";
 
 export type RevealStatus = "correct" | "wrong" | "timeout";
 
@@ -45,6 +45,11 @@ export default function RevealCard({
   const [loading, setLoading] = useState(!cache.has(key));
   const [muted, toggleMute] = useMuted();
   const continueRef = useRef<HTMLButtonElement>(null);
+
+  function handleContinue() {
+    playClick();
+    onContinue();
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +133,7 @@ export default function RevealCard({
           <button
             ref={continueRef}
             type="button"
-            onClick={onContinue}
+            onClick={handleContinue}
             className="w-full rounded-2xl border-4 border-ink bg-ink py-3 font-display text-lg font-extrabold tracking-wide text-white shadow-[0_4px_0_0_#0d0d0d] transition-transform active:translate-y-1 active:shadow-none"
           >
             {continueLabel}
@@ -188,7 +193,7 @@ export default function RevealCard({
           <button
             ref={continueRef}
             type="button"
-            onClick={onContinue}
+            onClick={handleContinue}
             className="w-full rounded-2xl border-4 border-ink bg-ink py-3 font-display text-lg font-extrabold tracking-wide text-white shadow-[0_4px_0_0_#0d0d0d] transition-transform active:translate-y-1 active:shadow-none"
           >
             {continueLabel}

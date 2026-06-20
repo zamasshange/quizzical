@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { quizzes } from "@/lib/quizzes";
-import { useMuted } from "@/lib/sound";
+import { playClick, useMuted } from "@/lib/sound";
 import { SoundOnIcon, SoundOffIcon } from "./icons";
 
 export default function NavActions() {
@@ -10,6 +10,7 @@ export default function NavActions() {
   const [muted, toggleMuted] = useMuted();
 
   function surpriseMe() {
+    playClick();
     const pick = quizzes[Math.floor(Math.random() * quizzes.length)];
     router.push(`/quiz/${pick.id}/play`);
   }

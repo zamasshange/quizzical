@@ -1,6 +1,6 @@
-// Lightweight WebAudio sound effects — no asset files. Plays a pleasant chime on
-// correct answers and a soft buzz on wrong ones. A single mute flag is persisted
-// to localStorage and shared across the app via a tiny subscribable store.
+// Central sound manager — loads mp3 assets from /public/sounds/ when present,
+// falls back to subtle Web Audio beeps if files are missing. A single mute flag
+// is persisted to localStorage and shared across the app.
 
 "use client";
 
@@ -8,8 +8,22 @@ import { useEffect, useState } from "react";
 
 const MUTE_KEY = "quizzical-muted";
 
-let ctx: AudioContext | null = null;
+const SOUNDS = {
+  click: { src: "/sounds/click.mp3", volume: 0.3 },
+  correct: { src: "/sounds/correct.mp3", volume: 0.5 },
+  wrong: { src: "/sounds/wrong.mp3", volume: 0.5 },
+  quizComplete: { src: "/sounds/quiz-complete.mp3", volume: 0.5 },
+  celebration: { src: "/sounds/celebration.mp3", volume: 0.7 },
+  fairPlay: { src: "/sounds/fair-play.mp3", volume: 0.5 },
+} as const;
+
+type SoundKey = keyof typeof SOUNDS;
+
 const listeners = new Set<() => void>();
+const audioCache = new Map<SoundKey, HTMLAudioElement>();
+const loadFailed = new Set<SoundKey>();
+
+let ctx: AudioContext | null = null;
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -35,6 +49,9 @@ export function isMuted(): boolean {
     return false;
   }
 }
+
+/** Alias for isMuted — used by play helpers before every sound. */
+export const getMuted = isMuted;
 
 export function setMuted(muted: boolean): void {
   try {
@@ -68,31 +85,119 @@ function tone(
   osc.stop(t + duration + 0.02);
 }
 
-export function playCorrect(): void {
-  if (isMuted()) return;
+function fallbackBeep(key: SoundKey): void {
   const ac = getCtx();
   if (!ac) return;
-  // Bright ascending arpeggio (C5 - E5 - G5).
-  tone(ac, 523.25, 0, 0.16, "triangle");
-  tone(ac, 659.25, 0.1, 0.16, "triangle");
-  tone(ac, 783.99, 0.2, 0.26, "triangle");
+
+  switch (key) {
+    case "click":
+      tone(ac, 880, 0, 0.06, "sine", 0.08);
+      break;
+    case "correct":
+      tone(ac, 523.25, 0, 0.16, "triangle");
+      tone(ac, 659.25, 0.1, 0.16, "triangle");
+      tone(ac, 783.99, 0.2, 0.26, "triangle");
+      break;
+    case "wrong":
+      tone(ac, 196.0, 0, 0.2, "sawtooth", 0.12);
+      tone(ac, 146.83, 0.12, 0.3, "sawtooth", 0.12);
+      break;
+    case "quizComplete":
+      tone(ac, 392.0, 0, 0.18, "triangle", 0.14);
+      tone(ac, 523.25, 0.12, 0.22, "triangle", 0.14);
+      tone(ac, 659.25, 0.24, 0.28, "triangle", 0.14);
+      break;
+    case "celebration":
+      tone(ac, 523.25, 0, 0.14, "triangle", 0.2);
+      tone(ac, 659.25, 0.1, 0.14, "triangle", 0.2);
+      tone(ac, 783.99, 0.2, 0.14, "triangle", 0.2);
+      tone(ac, 1046.5, 0.3, 0.32, "triangle", 0.22);
+      break;
+    case "fairPlay":
+      tone(ac, 349.23, 0, 0.22, "sine", 0.12);
+      tone(ac, 440.0, 0.14, 0.28, "sine", 0.12);
+      tone(ac, 523.25, 0.28, 0.34, "sine", 0.12);
+      break;
+  }
+}
+
+function getAudio(key: SoundKey): HTMLAudioElement | null {
+  if (typeof window === "undefined" || loadFailed.has(key)) return null;
+
+  if (!audioCache.has(key)) {
+    const { src, volume } = SOUNDS[key];
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    audio.volume = volume;
+    audio.addEventListener("error", () => loadFailed.add(key));
+    audioCache.set(key, audio);
+    void audio.load();
+  }
+
+  return audioCache.get(key) ?? null;
+}
+
+export function preloadSounds(): void {
+  if (typeof window === "undefined") return;
+  (Object.keys(SOUNDS) as SoundKey[]).forEach((key) => {
+    getAudio(key);
+  });
+}
+
+function playSound(key: SoundKey): void {
+  if (isMuted()) return;
+
+  const audio = getAudio(key);
+  if (!audio || loadFailed.has(key)) {
+    fallbackBeep(key);
+    return;
+  }
+
+  audio.volume = SOUNDS[key].volume;
+  audio.currentTime = 0;
+  void audio.play().catch(() => {
+    loadFailed.add(key);
+    fallbackBeep(key);
+  });
+}
+
+export function playClick(): void {
+  playSound("click");
+}
+
+export function playCorrect(): void {
+  playSound("correct");
 }
 
 export function playWrong(): void {
-  if (isMuted()) return;
-  const ac = getCtx();
-  if (!ac) return;
-  // Low descending "wobble".
-  tone(ac, 196.0, 0, 0.2, "sawtooth", 0.12);
-  tone(ac, 146.83, 0.12, 0.3, "sawtooth", 0.12);
+  playSound("wrong");
+}
+
+export function playQuizComplete(): void {
+  playSound("quizComplete");
+}
+
+export function playCelebration(): void {
+  playSound("celebration");
+}
+
+export function playFairPlay(): void {
+  playSound("fairPlay");
+}
+
+/** Plays the appropriate end-of-quiz sound based on score. */
+export function playQuizFinishSound(correctCount: number, total: number): void {
+  if (total <= 0) return;
+  if (correctCount === total) {
+    playCelebration();
+  } else if (correctCount <= total * 0.4) {
+    playFairPlay();
+  } else {
+    playQuizComplete();
+  }
 }
 
 // --- React hooks ------------------------------------------------------------
-
-/** Sound effects for gameplay. Returns stable play functions. */
-export function useGameSounds() {
-  return { playCorrect, playWrong };
-}
 
 /** Subscribes to the shared mute flag. Returns [muted, toggle]. */
 export function useMuted(): [boolean, () => void] {
@@ -109,4 +214,41 @@ export function useMuted(): [boolean, () => void] {
 
   const toggle = () => setMuted(!isMuted());
   return [muted, toggle];
+}
+
+/** Full sound effects hook — preloads assets and exposes mute controls. */
+export function useSoundEffects() {
+  const [muted, toggleMuted] = useMuted();
+
+  useEffect(() => {
+    preloadSounds();
+  }, []);
+
+  return {
+    playClick,
+    playCorrect,
+    playWrong,
+    playQuizComplete,
+    playCelebration,
+    playFairPlay,
+    muted,
+    toggleMuted,
+  };
+}
+
+/** Sound effects for gameplay. Returns stable play functions. */
+export function useGameSounds() {
+  return { playCorrect, playWrong, playClick };
+}
+
+/** Plays finish sound once when phase transitions to "finished". */
+export function useQuizFinishSound(
+  phase: string,
+  correctCount: number,
+  total: number,
+): void {
+  useEffect(() => {
+    if (phase !== "finished" || total <= 0) return;
+    playQuizFinishSound(correctCount, total);
+  }, [phase, correctCount, total]);
 }

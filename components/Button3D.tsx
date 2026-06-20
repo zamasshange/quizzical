@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { playClick } from "@/lib/sound";
 
 type Variant = "grass" | "sky" | "lime" | "ink" | "white";
 type Size = "sm" | "md" | "lg";
@@ -66,7 +69,10 @@ export default function Button3D(props: ButtonProps | LinkProps) {
   return (
     <button
       type={props.type ?? "button"}
-      onClick={props.onClick}
+      onClick={() => {
+        playClick();
+        props.onClick?.();
+      }}
       className={wrapper}
     >
       {inner}
