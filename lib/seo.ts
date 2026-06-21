@@ -4,12 +4,21 @@ import type { SeoTopic } from "./seoTopics";
 import { topicCount } from "./seoTopics";
 import type { GameMode } from "./imageQuestions";
 import { getCategory } from "./quizzes";
+import type { SeoEntity } from "./seoEntities";
+import {
+  ENTITY_TYPE_LABELS,
+  entityPath,
+  type SeoEntityType,
+} from "./seoEntitySlugs";
 import {
   BASE_KEYWORDS,
+  BRAND_KEYWORDS,
   CATEGORY_KEYWORDS,
+  CORE_QUIZ_KEYWORDS,
   IMAGE_GAME_KEYWORDS,
   PAGE_KEYWORDS,
   QUIZ_LONGTAIL_KEYWORDS,
+  SOUTH_AFRICA_KEYWORDS,
 } from "./seoKeywords";
 
 export const SITE_NAME = "Quizzical";
@@ -23,14 +32,20 @@ export function absoluteUrl(path: string): string {
 }
 
 type BuildMetadataInput = {
-  /** Page title without site suffix (template adds "| Quizzical"). */
   title: string;
   description: string;
   path: string;
   keywords: string[];
   noIndex?: boolean;
   ogType?: "website" | "article";
+  /** Bypass layout title template (homepage). */
+  absoluteTitle?: boolean;
 };
+
+function ogTitle(title: string): string {
+  if (title.includes(SITE_NAME)) return title;
+  return `${title} | ${SITE_NAME}`;
+}
 
 /** Builds full Next.js Metadata with canonical, Open Graph, Twitter, and keywords. */
 export function buildMetadata({
@@ -40,12 +55,16 @@ export function buildMetadata({
   keywords,
   noIndex = false,
   ogType = "website",
+  absoluteTitle = false,
 }: BuildMetadataInput): Metadata {
   const url = absoluteUrl(path);
-  const uniqueKeywords = [...new Set(keywords.map((k) => k.trim()).filter(Boolean))];
+  const uniqueKeywords = [...new Set(keywords.map((k) => k.trim()).filter(Boolean))].slice(
+    0,
+    24,
+  );
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
     keywords: uniqueKeywords,
     alternates: { canonical: url },
@@ -53,7 +72,7 @@ export function buildMetadata({
       ? { index: false, follow: false }
       : { index: true, follow: true, googleBot: { index: true, follow: true } },
     openGraph: {
-      title: `${title} | ${SITE_NAME}`,
+      title: ogTitle(title),
       description,
       url,
       siteName: SITE_NAME,
@@ -70,7 +89,7 @@ export function buildMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | ${SITE_NAME}`,
+      title: ogTitle(title),
       description,
       images: [absoluteUrl("/logo.png")],
     },
@@ -79,39 +98,22 @@ export function buildMetadata({
 
 export function homeMetadata(): Metadata {
   return buildMetadata({
-    title: `Quizzical Games — ${SITE_TAGLINE}`,
+    title: "Quizzical | Play Free AI-Powered Quiz Games Online",
     description:
-      "Quizzical is the free quiz games site at quizzical.site — picture quizzes, trivia, flags, sports, movies, celebrities, and AI-generated games by BDL Corp. Learn something new after every answer.",
+      "Challenge yourself with hundreds of quiz games covering geography, sports, movies, history, science, music, and more. Learn, compete, and become a Knowledge Explorer.",
     path: "/",
-    keywords: [
-      "quizzical",
-      "quizzical games",
-      "quizzical quiz",
-      "quizzical.site",
-      "Quizzical quiz games",
-      "play quizzical",
-      "quizzical online",
-      "quizzical trivia",
-      ...BASE_KEYWORDS,
-      ...PAGE_KEYWORDS.home,
-    ],
+    absoluteTitle: true,
+    keywords: [...PAGE_KEYWORDS.home],
   });
 }
 
 export function categoryMetadata(category: Category): Metadata {
   const extra = CATEGORY_KEYWORDS[category.slug] ?? [];
   return buildMetadata({
-    title: `${category.name} Quizzes — Free Online Trivia`,
-    description: `Play free ${category.name.toLowerCase()} quizzes online. ${category.tag} games, timed scoring, and educational facts after every answer — no download required.`,
+    title: `${category.name} Quiz Games & Trivia`,
+    description: `Free ${category.name.toLowerCase()} quizzes online — ${category.tag} games with timed scoring and educational facts after every answer. Play on Quizzical, no download required.`,
     path: `/${category.slug}`,
-    keywords: [
-      ...BASE_KEYWORDS,
-      ...extra,
-      `${category.name.toLowerCase()} quiz`,
-      `${category.name.toLowerCase()} trivia`,
-      category.tag.toLowerCase(),
-      `${category.tag.toLowerCase()} game`,
-    ],
+    keywords: [...BRAND_KEYWORDS, ...CORE_QUIZ_KEYWORDS, ...extra],
   });
 }
 
@@ -121,29 +123,17 @@ export function quizMetadata(quiz: Quiz): Metadata {
   const isFlags = quiz.id === "flags-of-the-world";
 
   return buildMetadata({
-    title: `${quiz.title} — Quizzical Games`,
+    title: `${quiz.title} Quiz`,
     description: isFlags
-      ? `Play Flags of the World free online — 197 countries, random flags every game, no repeats. Guess country flags with instant feedback and learn facts after each answer.`
-      : `${quiz.description} Play ${quiz.title} free on Quizzical — timed trivia with educational reveal cards. ${cat?.tag ?? "Quiz"} category.`,
+      ? `Play Flags of the World free — 197 countries, random flags every round, and educational facts after each answer. The ultimate flags quiz on Quizzical.`
+      : `${quiz.description} Play the ${quiz.title} quiz free on Quizzical — timed trivia with educational reveal cards in ${cat?.name ?? "trivia"}.`,
     path: `/quiz/${quiz.id}`,
     keywords: [
-      ...BASE_KEYWORDS,
+      ...BRAND_KEYWORDS,
       ...catKeys,
-      ...QUIZ_LONGTAIL_KEYWORDS,
       quiz.title,
       `${quiz.title} quiz`,
-      `${quiz.title} trivia`,
-      `${quiz.title} game online`,
-      cat?.tag.toLowerCase() ?? "",
-      ...(isFlags
-        ? [
-            "flags of the world quiz",
-            "country flags game",
-            "guess the flag",
-            "world flags trivia",
-            "flag quiz free",
-          ]
-        : []),
+      ...(isFlags ? ["flags quiz", "country flags game", "world flags trivia"] : []),
     ],
   });
 }
@@ -153,18 +143,38 @@ export function quizPlayMetadata(quiz: Quiz): Metadata {
   const catKeys = CATEGORY_KEYWORDS[quiz.category] ?? [];
 
   return buildMetadata({
-    title: `Play ${quiz.title} — Free Online Quiz`,
-    description: `Start playing ${quiz.title} now. Free online ${cat?.name.toLowerCase() ?? "trivia"} quiz with timer, score tracking, and learn-after-answer facts on Quizzical.site.`,
+    title: `Play ${quiz.title} Quiz`,
+    description: `Start ${quiz.title} now — free online ${cat?.name.toLowerCase() ?? "trivia"} with timer, score tracking, and learn-after-answer facts on Quizzical.`,
     path: `/quiz/${quiz.id}/play`,
     keywords: [
-      ...BASE_KEYWORDS,
+      ...BRAND_KEYWORDS,
       ...catKeys,
-      ...QUIZ_LONGTAIL_KEYWORDS,
       `play ${quiz.title.toLowerCase()}`,
       `${quiz.title} online`,
-      `${quiz.title} quiz game`,
-      "play quiz now",
-      "free quiz no download",
+    ],
+  });
+}
+
+export function entityMetadata(entity: SeoEntity): Metadata {
+  const label = ENTITY_TYPE_LABELS[entity.type];
+  const path = entityPath(entity.type, entity.slug);
+  const catKeys = CATEGORY_KEYWORDS[entity.relatedCategory] ?? [];
+
+  const description =
+    entity.intro ??
+    `Learn about ${entity.name} and test your knowledge with free ${label.toLowerCase()} quizzes on Quizzical — trivia games with educational facts after every answer.`;
+
+  return buildMetadata({
+    title: `${entity.name} — ${label} Quiz & Facts`,
+    description,
+    path,
+    keywords: [
+      ...BRAND_KEYWORDS,
+      ...catKeys,
+      entity.name,
+      `${entity.name} quiz`,
+      `${entity.name} trivia`,
+      `${label.toLowerCase()} quiz`,
     ],
   });
 }
@@ -173,18 +183,10 @@ export function imageGameMetadata(game: GameMode): Metadata {
   const extra = IMAGE_GAME_KEYWORDS[game.slug] ?? [];
 
   return buildMetadata({
-    title: `${game.title} — Picture Quiz Game`,
-    description: `Play ${game.title} free online. Image-based picture quiz with real photos, multiple choice answers, and educational facts — powered by Wikipedia and AI on Quizzical.site.`,
+    title: `${game.title} — Picture Quiz`,
+    description: `Play ${game.title} free online. Image-based picture quiz with real photos, multiple choice answers, and educational facts on Quizzical.`,
     path: `/play/${game.slug}`,
-    keywords: [
-      ...BASE_KEYWORDS,
-      ...extra,
-      game.title.toLowerCase(),
-      "picture quiz",
-      "image quiz game",
-      "photo quiz online",
-      "guess from picture",
-    ],
+    keywords: [...BRAND_KEYWORDS, ...extra, "picture quiz", "image quiz game"],
   });
 }
 
@@ -192,30 +194,28 @@ export function aiGeneratorMetadata(): Metadata {
   return buildMetadata({
     title: "AI Quiz Generator — Create Custom Trivia",
     description:
-      "Generate a custom quiz on any topic with AI from Sonke AI. Enter a subject, pick difficulty, and play instantly — free AI quiz maker at Quizzical.site by BDL Corp.",
+      "Generate a custom quiz on any topic with AI. Enter a subject, pick difficulty, and play instantly — free AI quiz maker on Quizzical.",
     path: "/ai",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.ai],
+    keywords: [...BRAND_KEYWORDS, ...PAGE_KEYWORDS.ai],
   });
 }
 
 export function signInMetadata(): Metadata {
   return buildMetadata({
-    title: "Sign In — Quizzical Account",
-    description:
-      "Sign in to Quizzical by BDL Corp to track quiz scores, save progress, and access your account. Free trivia games by Zama Shange and the Sonke AI team.",
+    title: "Sign In",
+    description: "Sign in to Quizzical to track quiz scores, XP, discoveries, and leaderboard rank.",
     path: "/signin",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.signin],
+    keywords: PAGE_KEYWORDS.signin,
     noIndex: true,
   });
 }
 
 export function signUpMetadata(): Metadata {
   return buildMetadata({
-    title: "Sign Up — Join Quizzical",
-    description:
-      "Create a free Quizzical account by BDL Corp to track quiz scores, pick your avatar, and save progress across trivia games.",
+    title: "Sign Up",
+    description: "Create a free Quizzical account to track progress, collect discoveries, and compete on leaderboards.",
     path: "/signup",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.signup],
+    keywords: PAGE_KEYWORDS.signup,
     noIndex: true,
   });
 }
@@ -232,61 +232,39 @@ export function dashboardMetadata(): Metadata {
 
 export function topicsHubMetadata(): Metadata {
   return buildMetadata({
-    title: "Quiz Topics & SEO Keywords",
-    description: `Browse ${topicCount()} quiz topics and keywords on Quizzical.site — free online trivia by BDL Corp, Sonke AI, Zama Shange, and Burdolar. Every topic is listed in our sitemap.`,
+    title: "Quiz Topics & Guides",
+    description: `Browse ${topicCount()} quiz topics on Quizzical — free online trivia for geography, sports, movies, history, science, and more.`,
     path: "/topics",
-    keywords: [
-      ...BASE_KEYWORDS,
-      ...PAGE_KEYWORDS.home,
-      "quiz topics",
-      "trivia keywords",
-      "quizzical sitemap topics",
-      "Sonke AI",
-      "Zama Shange",
-      "Burdolar",
-      "BDL Corp",
-    ],
+    keywords: [...BRAND_KEYWORDS, ...CORE_QUIZ_KEYWORDS, "quiz topics"],
   });
 }
 
 export function topicMetadata(topic: SeoTopic): Metadata {
   return buildMetadata({
     title: `${topic.keyword} — Free Online Quiz`,
-    description: `Play free ${topic.keyword} games online at Quizzical.site. BDL Corp trivia with Sonke AI, Zama Shange, and Burdolar — timed quizzes, picture games, and educational facts after every answer.`,
+    description: `Play free ${topic.keyword} games on Quizzical. Timed quizzes, picture games, and educational facts after every answer.`,
     path: `/topics/${topic.slug}`,
-    keywords: [
-      ...BASE_KEYWORDS,
-      topic.keyword,
-      ...topic.related,
-      `${topic.keyword} online`,
-      `${topic.keyword} free`,
-      `${topic.keyword} game`,
-      `${topic.keyword} quiz`,
-      "Sonke AI",
-      "Zama Shange",
-      "Burdolar",
-      "BDL Corp",
-    ],
+    keywords: [...BRAND_KEYWORDS, topic.keyword, ...topic.related.slice(0, 8)],
   });
 }
 
 export function aboutMetadata(): Metadata {
   return buildMetadata({
-    title: "About Us",
+    title: "About Quizzical",
     description:
-      "Learn about Quizzical — an AI-powered quiz platform by BDL Corp that combines entertainment with education. Discover our mission to make knowledge fun and accessible.",
+      "Quizzical is an AI-powered quiz platform that combines entertainment with education. Learn about our mission to make knowledge fun, free, and accessible worldwide.",
     path: "/about",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.about],
+    keywords: PAGE_KEYWORDS.about,
   });
 }
 
 export function founderMetadata(): Metadata {
   return buildMetadata({
-    title: "About Zama Shange — Founder",
+    title: "About Zama Shange — Founder of Quizzical",
     description:
-      "Meet Zama Shange, South African founder, designer, and developer behind Quizzical, BDL Corp, BDL News, and Sonke AI — building digital products that educate and inspire.",
+      "Meet Zama Shange, South African founder and developer behind Quizzical and BDL Corp — building digital products that educate and inspire.",
     path: "/founder",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.founder],
+    keywords: PAGE_KEYWORDS.founder,
   });
 }
 
@@ -294,9 +272,9 @@ export function privacyPolicyMetadata(): Metadata {
   return buildMetadata({
     title: "Privacy Policy",
     description:
-      "Quizzical privacy policy — how BDL Corp collects, uses, and protects your data. Account info, cookies, third-party services, and your rights explained.",
+      "How Quizzical collects, uses, and protects your data — accounts, cookies, third-party services, and your rights.",
     path: "/privacy-policy",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.privacy],
+    keywords: PAGE_KEYWORDS.privacy,
   });
 }
 
@@ -304,9 +282,9 @@ export function contactMetadata(): Metadata {
   return buildMetadata({
     title: "Contact Us",
     description:
-      "Get in touch with the Quizzical team by BDL Corp. Feedback, bug reports, partnerships, and general questions — we aim to respond within 24–72 business hours.",
+      "Contact the Quizzical team — feedback, bug reports, partnerships, and general questions.",
     path: "/contact",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.contact],
+    keywords: PAGE_KEYWORDS.contact,
   });
 }
 
@@ -314,8 +292,43 @@ export function statusMetadata(): Metadata {
   return buildMetadata({
     title: "Platform Status",
     description:
-      "Current operational status of Quizzical services — quiz gameplay, AI generation, authentication, leaderboards, and media content.",
+      "Operational status of Quizzical — quiz gameplay, AI generation, authentication, leaderboards, and media content.",
     path: "/status",
-    keywords: [...BASE_KEYWORDS, ...PAGE_KEYWORDS.status],
+    keywords: PAGE_KEYWORDS.status,
+  });
+}
+
+export function discoverHubMetadata(): Metadata {
+  return buildMetadata({
+    title: "Discover — Countries, Landmarks, Athletes & More",
+    description:
+      "Explore Quizzical discovery pages — learn about countries, landmarks, athletes, celebrities, movies, and historical figures, then play related quizzes.",
+    path: "/discover",
+    keywords: [
+      ...BRAND_KEYWORDS,
+      ...CORE_QUIZ_KEYWORDS,
+      "country quiz",
+      "landmark quiz",
+      "celebrity trivia",
+    ],
+  });
+}
+
+export function entityHubMetadata(type: SeoEntityType): Metadata {
+  const label = ENTITY_TYPE_LABELS[type];
+  const plural =
+    type === "country"
+      ? "Countries"
+      : type === "player"
+        ? "Athletes"
+        : type === "figure"
+          ? "Historical Figures"
+          : `${label}s`;
+
+  return buildMetadata({
+    title: `${plural} — Quiz & Trivia Guides`,
+    description: `Browse ${plural.toLowerCase()} on Quizzical — free educational pages linked to geography, sports, entertainment, and history quizzes.`,
+    path: `/${type === "figure" ? "figure" : type === "player" ? "player" : type}`,
+    keywords: [...BRAND_KEYWORDS, ...CATEGORY_KEYWORDS.geography],
   });
 }

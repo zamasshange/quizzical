@@ -37,6 +37,9 @@ import { useCompleteGame } from "@/lib/completeGame";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
+import QuizIntro from "./progression/QuizIntro";
+import { recordProgressionEvent } from "@/lib/progression/client";
+import { prefetchReveal } from "@/lib/revealPrefetch";
 
 import Button3D from "./Button3D";
 
@@ -147,6 +150,7 @@ export default function QuizPlayer({
   const finalBackLabel = backLabel ?? "Back to quiz";
 
   const revealCategory = getRevealCategory(quiz);
+  const profile = getQuizProfile(quiz);
 
   const router = useRouter();
   const completeGame = useCompleteGame();
@@ -185,6 +189,7 @@ export default function QuizPlayer({
   const [answerImageUrls, setAnswerImageUrls] = useState<(string | null)[]>([]);
 
   const [imagesLoading, setImagesLoading] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
 
   const { playCorrect, playWrong } = useGameSounds();
 
@@ -257,6 +262,7 @@ export default function QuizPlayer({
       score,
       correct: correctCount,
       total: questions.length,
+      quizCategory: quiz.category,
     });
   }, [
     phase,
@@ -341,17 +347,46 @@ export default function QuizPlayer({
 
         playCorrect();
 
+        void recordProgressionEvent({
+          type: "correct_answer",
+          term: current.answers[current.correct],
+          category: revealCategory,
+          quizCategory: quiz.category,
+          quizId: quiz.id,
+          difficulty: profile.difficulty,
+        });
+
       } else {
 
         playWrong();
+
+        void recordProgressionEvent({
+          type: "wrong_answer",
+          quizCategory: quiz.category,
+        });
 
       }
 
     },
 
-    [questions, index, timeLeft, playCorrect, playWrong],
+    [questions, index, timeLeft, playCorrect, playWrong, revealCategory, quiz.category, quiz.id, profile.difficulty],
 
   );
+
+
+
+  // Preload next question's educational reveal while player reads current answer
+  useEffect(() => {
+    if (!ready || phase === "finished") return;
+    const current = questions[index];
+    if (current) {
+      prefetchReveal(revealCategory, current.answers[current.correct]);
+    }
+    const next = questions[index + 1];
+    if (next) {
+      prefetchReveal(revealCategory, next.answers[next.correct]);
+    }
+  }, [ready, index, questions, revealCategory, phase]);
 
 
 
@@ -621,11 +656,21 @@ export default function QuizPlayer({
   }
 
   if (!ready || !question) {
+    const loadingMsg =
+      quiz.category === "geography"
+        ? "🌍 Preparing landmarks..."
+        : quiz.category === "sports"
+          ? "⚽ Gathering player stats..."
+          : quiz.category === "history"
+            ? "📜 Exploring historical archives..."
+            : quiz.category === "science-and-nature"
+              ? "🔬 Analyzing discoveries..."
+              : "✨ Loading challenge...";
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-3xl border-4 border-ink bg-white p-10 text-center shadow-[0_6px_0_0_#0d0d0d]">
         <span className="text-5xl">{quiz.emoji}</span>
-        <p className="font-display text-xl font-extrabold text-ink/60">
-          Loading quiz…
+        <p className="font-display text-xl font-extrabold text-ink/60 animate-pulse">
+          {loadingMsg}
         </p>
       </div>
     );
@@ -850,6 +895,20 @@ export default function QuizPlayer({
 
   return (
 
+    <>
+      {showIntro && (
+        <QuizIntro
+          title={quiz.title}
+          emoji={quiz.emoji}
+          categorySlug={quiz.category}
+          facts={[
+            `${questions.length} questions`,
+            profile.difficulty,
+            profile.previewFact,
+          ]}
+          onDone={() => setShowIntro(false)}
+        />
+      )}
     <div
 
       className={`mx-auto flex flex-col gap-5 ${
@@ -1200,7 +1259,7 @@ export default function QuizPlayer({
       )}
 
     </div>
-
+    </>
   );
 
 }

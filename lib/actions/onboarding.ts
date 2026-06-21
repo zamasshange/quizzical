@@ -4,6 +4,8 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isValidAvatarId } from "@/lib/avatars";
+import { persistProgress } from "@/lib/progression/server";
+import { createEmptyRaw } from "@/lib/progression/defaults";
 import {
   AVATAR_COOKIE_NAME,
   ONBOARDING_COOKIE_NAME,
@@ -18,6 +20,7 @@ function normalizeUsername(raw: string): string {
 export async function completeOnboarding(
   username: string,
   avatarId: string,
+  countryCode = "US",
 ): Promise<never> {
   const { userId } = await auth();
   if (!userId) {
@@ -73,6 +76,9 @@ export async function completeOnboarding(
 
   cookieStore.set(AVATAR_COOKIE_NAME, avatarId, cookieOpts);
   cookieStore.set(ONBOARDING_COOKIE_NAME, "1", cookieOpts);
+
+  const raw = createEmptyRaw(countryCode.slice(0, 2).toUpperCase());
+  await persistProgress(userId, normalized, avatarId, raw, 0, "onboarding");
 
   redirect("/");
 }

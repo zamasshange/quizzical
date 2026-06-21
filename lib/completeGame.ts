@@ -18,6 +18,7 @@ type CompleteGameInput = {
   score: number;
   correct: number;
   total: number;
+  quizCategory?: string;
 };
 
 export async function completeGameAndSubmit(
@@ -66,6 +67,19 @@ export async function completeGameAndSubmit(
     });
   } catch {
     /* offline — local scores still work */
+  }
+
+  try {
+    const { recordProgressionEvent } = await import("@/lib/progression/client");
+    await recordProgressionEvent({
+      type: "quiz_complete",
+      quizId: input.quizId,
+      quizCategory: input.quizCategory,
+      correct: input.correct,
+      total: input.total,
+    });
+  } catch {
+    /* progression optional */
   }
 }
 

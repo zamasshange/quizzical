@@ -15,6 +15,7 @@ import {
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import PictureGameGrid from "@/components/PictureGameGrid";
 import HomeGameHub from "@/components/HomeGameHub";
+import ExplorerHub from "@/components/progression/ExplorerHub";
 import JsonLd from "@/components/JsonLd";
 import { homeMetadata, SITE_TAGLINE } from "@/lib/seo";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seoStructuredData";
@@ -57,12 +58,12 @@ export default function Home() {
               <h1 className="font-display text-3xl font-black leading-[1.05] text-cream md:text-5xl">
                 Quizzical.
                 <br className="hidden md:block" />
-                <span className="text-sky"> {SITE_TAGLINE}</span>
+                <span className="text-sky"> Become a Knowledge Explorer.</span>
               </h1>
               <p className="hidden max-w-md text-base font-bold text-cream/70 md:block">
-                The quizzical games site at quizzical.site — picture quizzes,
-                trivia, flags, sports, movies, and AI games. Learn something new
-                after every answer.
+                Learn, discover, compete, and level up across hundreds of quiz
+                categories. Track your growth, collect discoveries, and climb
+                global leaderboards.
               </p>
               <div className="w-full max-w-lg">
                 <Suspense fallback={null}>
@@ -124,6 +125,8 @@ export default function Home() {
         </section>
 
         <HomeGameHub />
+
+        <ExplorerHub />
 
         {/* Curated quiz rows — full category lists live on /[category] via nav above */}
         {homeRows.map((row) => (

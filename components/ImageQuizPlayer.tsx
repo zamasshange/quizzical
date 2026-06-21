@@ -22,6 +22,8 @@ import {
   type SavedGameSession,
 } from "@/lib/gameProgress";
 import { useCompleteGame } from "@/lib/completeGame";
+import { recordProgressionEvent } from "@/lib/progression/client";
+import { prefetchReveal } from "@/lib/revealPrefetch";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
@@ -206,8 +208,19 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setScore((s) => s + earned);
         setCorrectCount((c) => c + 1);
         playCorrect();
+        void recordProgressionEvent({
+          type: "correct_answer",
+          term: question.answers[question.correct],
+          category: mode.category,
+          quizCategory: mode.quizCategorySlug ?? "entertainment",
+          difficulty,
+        });
       } else {
         playWrong();
+        void recordProgressionEvent({
+          type: "wrong_answer",
+          quizCategory: mode.quizCategorySlug ?? "entertainment",
+        });
       }
     },
     [question, timeLeft, timerSeconds, playCorrect, playWrong],
@@ -216,7 +229,15 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   useEffect(() => {
     if (status !== "ready" || questions.length === 0) return;
     prefetchUpcoming(questions, index + 1, 3);
-  }, [status, index, questions]);
+    const current = questions[index];
+    const next = questions[index + 1];
+    if (current?.answers[current.correct]) {
+      prefetchReveal(mode.category, current.answers[current.correct]);
+    }
+    if (next?.answers[next.correct]) {
+      prefetchReveal(mode.category, next.answers[next.correct]);
+    }
+  }, [status, index, questions, mode.category]);
 
   useEffect(() => {
     if (status !== "ready") return;
@@ -286,6 +307,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       score,
       correct: correctCount,
       total: questions.length,
+      quizCategory: mode.quizCategorySlug ?? "entertainment",
     });
   }, [
     phase,

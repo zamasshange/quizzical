@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
@@ -11,11 +12,20 @@ import {
   type SavedGameSession,
 } from "@/lib/gameProgress";
 import { formatHistoryDate } from "@/lib/completeGame";
+import { useProgression } from "@/lib/progression/client";
+import { xpToNextLevel } from "@/lib/progression/xp";
+import { COUNTRIES, getCountry } from "@/lib/progression/countries";
+import { AVATARS, getAvatarById } from "@/lib/avatars";
 
 export default function ProfileClient() {
   const { user, isSignedIn } = useUser();
+  const { state, loaded, refresh } = useProgression();
   const username =
     (user?.publicMetadata?.username as string | undefined) ?? "Player";
+  const avatarId =
+    (user?.publicMetadata?.avatarId as string | undefined) ?? null;
+  const avatar = avatarId ? getAvatarById(avatarId) : null;
+
   const [active, setActive] = useState<SavedGameSession[]>([]);
   const [history, setHistory] = useState<GameHistoryEntry[]>([]);
 
@@ -25,48 +35,168 @@ export default function ProfileClient() {
   }, []);
 
   const completed = getRecentCompleted(20);
-  const totalScore = completed.reduce((s, g) => s + g.score, 0);
-  const totalCorrect = completed.reduce((s, g) => s + g.correct, 0);
-  const totalQuestions = completed.reduce((s, g) => s + g.total, 0);
+  const xpBar = xpToNextLevel(state.xp);
+  const country = getCountry(state.countryCode);
+
+  async function updateCountry(code: string) {
+    try {
+      await fetch("/api/progression", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ countryCode: code }),
+      });
+      await refresh();
+    } catch {
+      /* local only */
+    }
+  }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-4">
-      <div>
-        <h1 className="font-display text-4xl font-black text-ink">
-          {isSignedIn ? `Hey, ${username}! 👋` : "My games"}
-        </h1>
-        <p className="mt-2 font-bold text-ink/60">
-          Continue in-progress quizzes, revisit your history, and climb the
-          leaderboard.
-        </p>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {avatar && (
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-ink bg-lime/30 shadow-[0_4px_0_0_#0d0d0d]">
+              <Image src={avatar.src} alt="" width={48} height={48} />
+            </div>
+          )}
+          <div>
+            <h1 className="font-display text-4xl font-black text-ink">
+              {isSignedIn ? `${username}` : "Knowledge Explorer"}
+            </h1>
+            <p className="font-extrabold text-grass">
+              Level {state.level} · {state.title}
+            </p>
+            {country && (
+              <p className="text-sm font-bold text-ink/55">
+                {country.flag} {country.name}
+                {state.rank ? ` · Global rank #${state.rank}` : ""}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/knowledge-book"
+            className="rounded-full border-4 border-ink bg-white px-4 py-2 text-sm font-extrabold shadow-[0_3px_0_0_#0d0d0d]"
+          >
+            📖 Knowledge Book
+          </Link>
+          <Link
+            href="/achievements"
+            className="rounded-full border-4 border-ink bg-lime/40 px-4 py-2 text-sm font-extrabold shadow-[0_3px_0_0_#0d0d0d]"
+          >
+            🏅 Achievements
+          </Link>
+        </div>
       </div>
 
-      {isSignedIn && completed.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Games played", value: String(completed.length) },
-            { label: "Total points", value: totalScore.toLocaleString() },
-            {
-              label: "Accuracy",
-              value:
-                totalQuestions > 0
-                  ? `${Math.round((totalCorrect / totalQuestions) * 100)}%`
-                  : "—",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border-4 border-ink bg-white p-4 text-center shadow-[0_4px_0_0_#0d0d0d]"
-            >
-              <p className="font-display text-2xl font-extrabold text-grass">
-                {stat.value}
+      {loaded && (
+        <>
+          <div className="rounded-2xl border-4 border-ink bg-white p-5 shadow-[0_4px_0_0_#0d0d0d]">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="font-display text-xl font-extrabold text-ink">
+                {state.xp.toLocaleString()} XP
               </p>
-              <p className="text-xs font-bold uppercase tracking-wide text-ink/45">
-                {stat.label}
-              </p>
+              <p className="text-sm font-bold text-ink/55">🪙 {state.coins} Knowledge Coins</p>
             </div>
-          ))}
-        </div>
+            <div className="h-3 overflow-hidden rounded-full border-2 border-ink bg-cream">
+              <div
+                className="h-full bg-grass transition-all"
+                style={{ width: `${xpBar.progress * 100}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs font-bold text-ink/45">
+              {xpBar.current}/{xpBar.needed} XP to level {xpBar.level + 1}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: "Streak", value: `${state.currentStreak}d`, sub: `Best ${state.longestStreak}d` },
+              { label: "Discoveries", value: String(state.discoveryCount), sub: "Collected" },
+              { label: "Quizzes", value: String(state.stats.quizzesCompleted), sub: "Completed" },
+              {
+                label: "Accuracy",
+                value:
+                  state.stats.totalAnswered > 0
+                    ? `${Math.round((state.stats.totalCorrect / state.stats.totalAnswered) * 100)}%`
+                    : "—",
+                sub: "All time",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-2xl border-4 border-ink bg-white p-4 text-center shadow-[0_4px_0_0_#0d0d0d]"
+              >
+                <p className="font-display text-2xl font-extrabold text-grass">{s.value}</p>
+                <p className="text-xs font-extrabold uppercase text-ink/45">{s.label}</p>
+                <p className="text-[10px] font-bold text-ink/40">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {state.badges.length > 0 && (
+            <section>
+              <h2 className="mb-2 text-lg font-black">Badges</h2>
+              <div className="flex flex-wrap gap-2">
+                {state.badges.map((b) => (
+                  <span
+                    key={b.id}
+                    className="rounded-full border-2 border-ink bg-lime/30 px-3 py-1 text-sm font-extrabold"
+                  >
+                    {b.emoji} {b.label}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section>
+            <h2 className="mb-2 text-lg font-black">Category mastery</h2>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {state.mastery
+                .filter((m) => m.answered > 0)
+                .slice(0, 8)
+                .map((m) => (
+                  <li
+                    key={m.slug}
+                    className="rounded-xl border-2 border-ink/15 bg-white px-3 py-2"
+                  >
+                    <div className="flex justify-between text-sm font-extrabold">
+                      <span className="capitalize">{m.slug.replace(/-/g, " ")}</span>
+                      <span>{m.masteryPct}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-cream">
+                      <div className="h-full bg-grass" style={{ width: `${m.masteryPct}%` }} />
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </section>
+
+          {isSignedIn && (
+            <section>
+              <h2 className="mb-2 text-lg font-black">Represent your country</h2>
+              <div className="flex flex-wrap gap-2">
+                {COUNTRIES.map((c) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => updateCountry(c.code)}
+                    className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold ${
+                      state.countryCode === c.code
+                        ? "border-ink bg-grass text-white"
+                        : "border-ink/20 bg-white text-ink/60 hover:border-ink/40"
+                    }`}
+                  >
+                    {c.flag} {c.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {active.length > 0 && (
@@ -83,8 +213,7 @@ export default function ProfileClient() {
                   <div className="min-w-0 flex-1">
                     <p className="font-extrabold text-ink">{s.title}</p>
                     <p className="text-sm font-semibold text-ink/55">
-                      Question {s.index + 1} · {s.score.toLocaleString()} pts ·
-                      updated {formatHistoryDate(s.updatedAt)}
+                      Question {s.index + 1} · {s.score.toLocaleString()} pts
                     </p>
                   </div>
                   <span className="rounded-full border-2 border-ink bg-grass px-3 py-1 text-xs font-extrabold text-white">
@@ -105,7 +234,7 @@ export default function ProfileClient() {
             <Link href="/" className="text-grass hover:underline">
               play a quiz
             </Link>{" "}
-            to start tracking!
+            to start your journey!
           </div>
         ) : (
           <ul className="flex flex-col gap-2">
@@ -143,7 +272,7 @@ export default function ProfileClient() {
         </Link>
         <Link
           href="/"
-          className="rounded-full border-4 border-ink/20 px-5 py-2.5 text-sm font-extrabold text-ink/70 hover:border-ink hover:text-ink"
+          className="rounded-full border-4 border-ink/20 px-5 py-2.5 text-sm font-extrabold text-ink/70 hover:border-ink"
         >
           Browse quizzes
         </Link>

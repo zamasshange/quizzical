@@ -15,6 +15,7 @@ const GUEST_LINKS = [{ label: "Sign Up", href: "/signup" }];
 
 const MEMBER_LINKS = [
   { label: "My Games", href: "/profile" },
+  { label: "Knowledge Book", href: "/knowledge-book" },
   { label: "Leaderboard", href: "/leaderboard" },
 ];
 

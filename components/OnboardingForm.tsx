@@ -4,11 +4,13 @@ import Image from "next/image";
 import { useState } from "react";
 import { playClick } from "@/lib/sound";
 import { AVATARS } from "@/lib/avatars";
+import { COUNTRIES, detectCountryCode } from "@/lib/progression/countries";
 import { completeOnboarding } from "@/lib/actions/onboarding";
 
 export default function OnboardingForm() {
   const [username, setUsername] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState(() => detectCountryCode());
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -20,7 +22,7 @@ export default function OnboardingForm() {
     setIsSaving(true);
 
     try {
-      await completeOnboarding(username, selectedId);
+      await completeOnboarding(username, selectedId, countryCode);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setIsSaving(false);
@@ -62,6 +64,27 @@ export default function OnboardingForm() {
         <p className="text-xs font-semibold text-ink/50">
           3–20 characters · letters, numbers, underscores
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-extrabold text-ink">Your country</span>
+        <div className="flex flex-wrap gap-2">
+          {COUNTRIES.map((c) => (
+            <button
+              key={c.code}
+              type="button"
+              disabled={isSaving}
+              onClick={() => setCountryCode(c.code)}
+              className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold ${
+                countryCode === c.code
+                  ? "border-ink bg-grass text-white"
+                  : "border-ink/20 bg-cream text-ink/60"
+              }`}
+            >
+              {c.flag} {c.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

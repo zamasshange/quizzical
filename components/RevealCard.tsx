@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FactReveal, RevealData } from "@/lib/reveal/types";
+import {
+  getCachedRevealClient,
+  setCachedRevealClient,
+} from "@/lib/revealPrefetch";
 import { PlayerRevealCard, TeamRevealCard } from "./reveal/SportsRevealCard";
 import { MovieRevealCard } from "./reveal/MovieRevealCard";
 import { CountryRevealCard } from "./reveal/CountryRevealCard";
@@ -11,7 +15,11 @@ export type RevealStatus = "correct" | "wrong" | "timeout";
 
 export type RevealVariant = "full" | "actions" | "content";
 
-const cache = new Map<string, RevealData | null>();
+const cache = {
+  get: getCachedRevealClient,
+  set: setCachedRevealClient,
+  has: (key: string) => getCachedRevealClient(key) !== undefined,
+};
 
 function revealTitle(data: RevealData | null, fallback: string): string {
   if (!data) return fallback;
@@ -287,12 +295,20 @@ function FactRevealCard({
 
 function RevealSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-3">
-      <div className="h-48 w-full rounded-2xl border-[3px] border-ink/10 bg-cream-dark sm:h-56" />
-      <div className="space-y-1.5">
-        <div className="h-3 w-1/3 rounded bg-cream-dark" />
-        <div className="h-3 w-4/5 rounded bg-cream-dark" />
-        <div className="h-3 w-2/3 rounded bg-cream-dark" />
+    <div className="flex flex-col gap-3">
+      <div className="relative h-48 w-full overflow-hidden rounded-2xl border-[3px] border-ink/10 bg-cream-dark sm:h-56">
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      </div>
+      <div className="space-y-2">
+        <div className="relative h-3 w-1/3 overflow-hidden rounded bg-cream-dark">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        </div>
+        <div className="relative h-3 w-4/5 overflow-hidden rounded bg-cream-dark">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        </div>
+        <div className="relative h-3 w-2/3 overflow-hidden rounded bg-cream-dark">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        </div>
       </div>
     </div>
   );

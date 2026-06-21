@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getCategory, type Quiz, type Badge } from "@/lib/quizzes";
-import { getQuizProfile } from "@/lib/quizProfiles";
+import { getQuizProfile, getRevealCategory } from "@/lib/quizProfiles";
 import { quizImageFallbacks } from "@/lib/quizImageUrl";
+import { prefetchReveal } from "@/lib/revealPrefetch";
 import { cardHover, defaultTransition, fadeUp } from "@/lib/motion";
 
 const thumbCache = new Map<string, string | null>();
@@ -46,6 +47,7 @@ type Props = {
 export default function QuizCard({ quiz, index = 0 }: Props) {
   const tag = getCategory(quiz.category)?.tag ?? "Trivia quiz";
   const profile = getQuizProfile(quiz);
+  const revealCategory = getRevealCategory(quiz);
   const [thumbUrl, setThumbUrl] = useState<string | null>(() => {
     const cached = thumbCache.get(profile.thumbnailTerm);
     return cached !== undefined ? cached : null;
@@ -99,7 +101,17 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
       initial="hidden"
       animate="visible"
       transition={{ ...defaultTransition, delay: index * 0.06 }}
-      onHoverStart={() => setHover(true)}
+      onHoverStart={() => {
+        setHover(true);
+        prefetchReveal(revealCategory, profile.thumbnailTerm);
+        if (thumbUrl) {
+          const src = quizImageFallbacks(thumbUrl)[0];
+          if (src) {
+            const img = new Image();
+            img.src = src;
+          }
+        }
+      }}
       onHoverEnd={() => setHover(false)}
     >
       <Link href={`/quiz/${quiz.id}`} className="group flex flex-col">

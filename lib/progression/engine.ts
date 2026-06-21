@@ -1,0 +1,379 @@
+import { categories } from "@/lib/quizzes";
+import { ACHIEVEMENTS, BADGES } from "./achievements";
+import { classifyDiscovery, generateDailyMissions } from "./missions";
+import type {
+  CategoryMastery,
+  ProgressionEventPayload,
+  ProgressionEventResult,
+  ProgressionState,
+  UserAchievement,
+  UserDiscovery,
+} from "./types";
+import {
+  COINS,
+  XP,
+  categoryTitle,
+  globalTitle,
+  levelFromXp,
+  streakBonusXp,
+  todayKey,
+  xpToNextLevel,
+} from "./xp";
+
+const STORAGE_KEY = "quizzical-progression";
+
+type RawState = {
+  xp: number;
+  coins: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastPlayDate: string | null;
+  countryCode: string;
+  discoveries: UserDiscovery[];
+  mastery: Record<string, { answered: number; correct: number }>;
+  unlockedAchievements: string[];
+  unlockedBadges: string[];
+  missions: ReturnType<typeof generateDailyMissions>;
+  missionDate: string;
+  stats: ProgressionState["stats"];
+  firstQuizToday: boolean;
+};
+
+function defaultRaw(countryCode = "US"): RawState {
+  const today = todayKey();
+  return {
+    xp: 0,
+    coins: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastPlayDate: null,
+    countryCode,
+    discoveries: [],
+    mastery: {},
+    unlockedAchievements: [],
+    unlockedBadges: [],
+    missions: generateDailyMissions(today),
+    missionDate: today,
+    stats: {
+      totalCorrect: 0,
+      totalAnswered: 0,
+      quizzesCompleted: 0,
+      perfectQuizzes: 0,
+    },
+    firstQuizToday: false,
+  };
+}
+
+function buildMastery(raw: RawState): CategoryMastery[] {
+  return categories.map((cat) => {
+    const m = raw.mastery[cat.slug] ?? { answered: 0, correct: 0 };
+    const masteryPct =
+      m.answered > 0
+        ? Math.min(100, Math.round((m.correct / Math.max(m.answered, 1)) * 100))
+        : 0;
+    return {
+      slug: cat.slug,
+      answered: m.answered,
+      correct: m.correct,
+      masteryPct,
+      title: categoryTitle(cat.slug, masteryPct),
+    };
+  });
+}
+
+function buildAchievements(raw: RawState): UserAchievement[] {
+  const geoDiscoveries = raw.discoveries.filter(
+    (d) => d.discoveryType === "country" || d.discoveryType === "landmark",
+  ).length;
+  const histDiscoveries = raw.discoveries.filter(
+    (d) => d.discoveryType === "historical_figure",
+  ).length;
+  const sportsCorrect = raw.mastery.sports?.correct ?? 0;
+  const entQuizzes = raw.stats.quizzesCompleted; // simplified
+  const sciMastery =
+    buildMastery(raw).find((m) => m.slug === "science-and-nature")?.masteryPct ?? 0;
+  const level = levelFromXp(raw.xp);
+
+  const metrics: Record<string, number> = {
+    discoveries_geography: geoDiscoveries,
+    correct_sports: sportsCorrect,
+    quizzes_entertainment: entQuizzes,
+    discoveries_history: histDiscoveries,
+    "mastery_science-and-nature": sciMastery,
+    longest_streak: raw.longestStreak,
+    discovery_count: raw.discoveries.length,
+    perfect_quizzes: raw.stats.perfectQuizzes,
+    quizzes_completed: raw.stats.quizzesCompleted,
+    level,
+  };
+
+  return ACHIEVEMENTS.map((a) => {
+    const progress = metrics[a.metric] ?? 0;
+    const unlocked = raw.unlockedAchievements.includes(a.id);
+    return {
+      ...a,
+      progress,
+      unlocked,
+      unlockedAt: unlocked ? Date.now() : undefined,
+    };
+  });
+}
+
+function buildBadges(raw: RawState) {
+  return BADGES.filter((b) => raw.unlockedBadges.includes(b.id)).map((b) => ({
+    id: b.id,
+    label: b.label,
+    emoji: b.emoji,
+  }));
+}
+
+export function toProgressionState(raw: RawState): ProgressionState {
+  const level = levelFromXp(raw.xp);
+  return {
+    xp: raw.xp,
+    level,
+    title: globalTitle(level),
+    coins: raw.coins,
+    currentStreak: raw.currentStreak,
+    longestStreak: raw.longestStreak,
+    countryCode: raw.countryCode,
+    discoveries: raw.discoveries,
+    discoveryCount: raw.discoveries.length,
+    mastery: buildMastery(raw),
+    missions:
+      raw.missionDate === todayKey()
+        ? raw.missions
+        : generateDailyMissions(todayKey()),
+    achievements: buildAchievements(raw),
+    badges: buildBadges(raw),
+    stats: raw.stats,
+  };
+}
+
+export function loadRawState(): RawState {
+  if (typeof window === "undefined") return defaultRaw();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultRaw();
+    const parsed = JSON.parse(raw) as RawState;
+    if (parsed.missionDate !== todayKey()) {
+      parsed.missions = generateDailyMissions(todayKey());
+      parsed.missionDate = todayKey();
+      parsed.firstQuizToday = false;
+    }
+    return { ...defaultRaw(), ...parsed };
+  } catch {
+    return defaultRaw();
+  }
+}
+
+export function saveRawState(raw: RawState): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
+  } catch {
+    /* quota */
+  }
+}
+
+function updateStreak(raw: RawState): void {
+  const today = todayKey();
+  if (raw.lastPlayDate === today) return;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yKey = yesterday.toISOString().slice(0, 10);
+
+  if (raw.lastPlayDate === yKey) {
+    raw.currentStreak += 1;
+  } else if (raw.lastPlayDate !== today) {
+    raw.currentStreak = 1;
+  }
+
+  raw.longestStreak = Math.max(raw.longestStreak, raw.currentStreak);
+  raw.lastPlayDate = today;
+}
+
+function bumpMission(raw: RawState, missionId: string, amount = 1): void {
+  raw.missions = raw.missions.map((m) => {
+    if (m.id !== missionId) return m;
+    const progress = Math.min(m.target, m.progress + amount);
+    return { ...m, progress, completed: progress >= m.target };
+  });
+}
+
+function checkAchievements(raw: RawState): string[] {
+  const state = toProgressionState(raw);
+  const newly: string[] = [];
+  for (const a of state.achievements) {
+    if (!a.unlocked && a.progress >= a.target) {
+      raw.unlockedAchievements.push(a.id);
+      newly.push(a.id);
+    }
+  }
+  return newly;
+}
+
+function checkBadges(raw: RawState): string[] {
+  const level = levelFromXp(raw.xp);
+  const newly: string[] = [];
+  const tryUnlock = (id: string, cond: boolean) => {
+    if (cond && !raw.unlockedBadges.includes(id)) {
+      raw.unlockedBadges.push(id);
+      newly.push(id);
+    }
+  };
+
+  tryUnlock("explorer", level >= 5);
+  tryUnlock("genius", level >= 35);
+  tryUnlock("champion", level >= 50);
+  tryUnlock("streak-master", raw.longestStreak >= 30);
+  tryUnlock("world-traveler", raw.unlockedAchievements.includes("world-traveler"));
+  tryUnlock("movie-buff", raw.unlockedAchievements.includes("movie-buff"));
+
+  const sports = raw.mastery.sports;
+  if (sports && sports.answered > 0) {
+    const pct = (sports.correct / sports.answered) * 100;
+    tryUnlock("sports-expert", pct >= 50 && sports.correct >= 50);
+  }
+
+  return newly;
+}
+
+export function applyProgressionEvent(
+  raw: RawState,
+  payload: ProgressionEventPayload,
+  options?: { persistLocal?: boolean },
+): ProgressionEventResult {
+  const prevLevel = levelFromXp(raw.xp);
+  let xpEarned = 0;
+  let coinsEarned = 0;
+  let streakBonus = 0;
+  let discovery: (UserDiscovery & { isNew: boolean }) | undefined;
+
+  updateStreak(raw);
+
+  if (payload.type === "correct_answer") {
+    xpEarned += XP.correctAnswer;
+    coinsEarned += COINS.correctAnswer;
+    raw.stats.totalCorrect += 1;
+    raw.stats.totalAnswered += 1;
+
+    if (payload.difficulty === "Hard") xpEarned += XP.hardBonus;
+
+    if (payload.quizCategory) {
+      const m = raw.mastery[payload.quizCategory] ?? { answered: 0, correct: 0 };
+      m.answered += 1;
+      m.correct += 1;
+      raw.mastery[payload.quizCategory] = m;
+    }
+
+    bumpMission(raw, "answer-10");
+    bumpMission(raw, "correct-10");
+
+    if (payload.term) {
+      const exists = raw.discoveries.some(
+        (d) => d.term.toLowerCase() === payload.term!.toLowerCase(),
+      );
+      if (!exists) {
+        const d: UserDiscovery = {
+          term: payload.term,
+          category: payload.category ?? payload.quizCategory ?? "general",
+          discoveryType: classifyDiscovery(
+            payload.category ?? "",
+            payload.quizCategory,
+          ),
+          quizId: payload.quizId,
+          discoveredAt: Date.now(),
+        };
+        raw.discoveries.unshift(d);
+        if (raw.discoveries.length > 2000) raw.discoveries.length = 2000;
+        xpEarned += XP.newDiscovery;
+        coinsEarned += COINS.newDiscovery;
+        discovery = { ...d, isNew: true };
+        bumpMission(raw, "learn-5");
+      }
+    }
+  }
+
+  if (payload.type === "wrong_answer") {
+    raw.stats.totalAnswered += 1;
+    if (payload.quizCategory) {
+      const m = raw.mastery[payload.quizCategory] ?? { answered: 0, correct: 0 };
+      m.answered += 1;
+      raw.mastery[payload.quizCategory] = m;
+    }
+    bumpMission(raw, "answer-10");
+  }
+
+  if (payload.type === "quiz_complete") {
+    xpEarned += XP.quizComplete;
+    coinsEarned += COINS.quizComplete;
+    raw.stats.quizzesCompleted += 1;
+    bumpMission(raw, "complete-3");
+
+    if (!raw.firstQuizToday) {
+      xpEarned += XP.firstQuizOfDay;
+      raw.firstQuizToday = true;
+    }
+
+    if (payload.quizCategory === "sports") bumpMission(raw, "sports-3");
+
+    if (payload.correct === payload.total && (payload.total ?? 0) > 0) {
+      xpEarned += XP.perfectQuiz;
+      coinsEarned += COINS.perfectQuiz;
+      raw.stats.perfectQuizzes += 1;
+    }
+  }
+
+  if (payload.type === "daily_challenge") {
+    xpEarned += XP.dailyChallenge;
+    bumpMission(raw, "daily-challenge", 1);
+  }
+
+  if (payload.type === "mission_complete" && payload.missionId) {
+    const mission = raw.missions.find((m) => m.id === payload.missionId);
+    if (mission?.completed && !mission.claimed) {
+      xpEarned += mission.rewardXp;
+      coinsEarned += mission.rewardCoins;
+      mission.claimed = true;
+    }
+  }
+
+  streakBonus = streakBonusXp(raw.currentStreak);
+  xpEarned += streakBonus;
+  if (raw.currentStreak > 1) coinsEarned += COINS.streakDay;
+
+  raw.xp += xpEarned;
+  raw.coins += coinsEarned;
+
+  const achievementsUnlocked = checkAchievements(raw);
+  const badgesUnlocked = checkBadges(raw);
+
+  const newLevel = levelFromXp(raw.xp);
+  const leveledUp = newLevel > prevLevel;
+
+  if (options?.persistLocal !== false && typeof window !== "undefined") {
+    saveRawState(raw);
+  }
+
+  return {
+    xpEarned,
+    coinsEarned,
+    leveledUp,
+    newLevel: leveledUp ? newLevel : undefined,
+    newTitle: leveledUp ? globalTitle(newLevel) : undefined,
+    discovery,
+    achievementsUnlocked,
+    badgesUnlocked,
+    streakBonus,
+    state: toProgressionState(raw),
+  };
+}
+
+export function getDefaultProgressionState(countryCode?: string): ProgressionState {
+  return toProgressionState(defaultRaw(countryCode));
+}
+
+export { xpToNextLevel, STORAGE_KEY };
+export type { RawState };
