@@ -1,5 +1,4 @@
 import type { CountryReveal } from "@/lib/reveal/types";
-import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
 
 function compactPopulation(n: number | null): string | null {
   if (!n) return null;
@@ -23,7 +22,7 @@ export function CountryRevealCard({
   if (data.region) facts.push(["Continent", data.region]);
 
   const showImage = !hideImage && data.image_url;
-  const flagSrc = data.flag_url ? proxiedQuizImageUrl(data.flag_url) : null;
+  const flagSrc = data.flag_url;
 
   return (
     <div className="flex flex-col gap-3">

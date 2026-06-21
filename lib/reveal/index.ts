@@ -10,6 +10,7 @@ import { fetchWikipediaFact } from "../wikipedia";
 import { fetchMovieReveal } from "../tmdb";
 import { fetchSportsEntity } from "../thesportsdb";
 import { lookupCountry } from "../countryData";
+import { flagUrlFromIso2 } from "../flagUrl";
 import { getCachedReveal, setCachedReveal } from "./cache";
 import {
   resolveProvider,
@@ -46,7 +47,7 @@ async function fetchCountryReveal(term: string): Promise<CountryReveal | null> {
     kind: "country",
     provider: "wikipedia",
     name: wiki?.title ?? term,
-    flag_url: `https://flagcdn.com/w320/${rec.iso2}.png`,
+    flag_url: flagUrlFromIso2(rec.iso2),
     capital: rec.capital,
     population: rec.population,
     region: rec.region,

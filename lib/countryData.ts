@@ -1,9 +1,10 @@
 // Static country facts for reveal cards. Bundled (not fetched) because the free
 // country APIs are unreliable/deprecated — this is instant and always available.
 // Population figures are approximate (rounded) and fine for a quiz context.
-// Flags come from flagcdn.com via the ISO 3166-1 alpha-2 code.
+// Flags are self-hosted PNGs in /public/flags (see lib/flagUrl.ts).
 
 import { ALL_COUNTRIES } from "./allCountries";
+import { flagUrlFromIso2 } from "./flagUrl";
 
 export type CountryRecord = {
   capital: string;
@@ -133,13 +134,13 @@ export function parseFlagQuery(query: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Clean flag PNG from flagcdn — no Wikipedia thumbnail padding. */
-export function flagImageFromQuery(query: string, width = 640): string | null {
+/** Self-hosted flag PNG in /public/flags. */
+export function flagImageFromQuery(query: string, _width = 640): string | null {
   const country = parseFlagQuery(query);
   if (!country) return null;
   const iso2 = lookupCountryIso(country);
   if (!iso2) return null;
-  return `https://flagcdn.com/w${width}/${iso2}.png`;
+  return flagUrlFromIso2(iso2);
 }
 
 export function isFlagImageQuery(query?: string): boolean {
