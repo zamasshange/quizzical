@@ -27,6 +27,8 @@ import { prefetchReveal } from "@/lib/revealPrefetch";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
+import QuizIntro from "./progression/QuizIntro";
+import { useAtmosphereCategory } from "@/lib/atmosphere/useAtmosphereCategory";
 import type { GameMode } from "@/lib/imageQuestions";
 import {
   prefetchImages,
@@ -121,7 +123,18 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(DEFAULT_TIMER);
   const [showHint, setShowHint] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const introShownRef = useRef(false);
   const { playCorrect, playWrong } = useGameSounds();
+
+  useAtmosphereCategory(mode.quizCategorySlug ?? "entertainment");
+
+  useEffect(() => {
+    if (status === "ready" && !introShownRef.current) {
+      introShownRef.current = true;
+      setShowIntro(true);
+    }
+  }, [status]);
 
   useQuizFinishSound(phase, correctCount, questions.length);
 
@@ -603,6 +616,16 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const continueLabel = isLast ? "See results" : "Continue →";
 
   return (
+    <>
+      {showIntro && (
+        <QuizIntro
+          title={mode.title}
+          emoji={mode.emoji}
+          categorySlug={mode.quizCategorySlug ?? "entertainment"}
+          facts={[`${questions.length} questions`, difficulty, mode.category]}
+          onDone={() => setShowIntro(false)}
+        />
+      )}
     <div
       className={`mx-auto flex w-full max-w-5xl flex-col gap-4 ${
         revealed ? "pb-32 md:pb-0" : ""
@@ -848,6 +871,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         />
       )}
     </div>
+    </>
   );
 }
 

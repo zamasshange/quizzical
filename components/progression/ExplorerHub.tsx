@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import MicroFloat from "@/components/atmosphere/MicroFloat";
 import { useProgression } from "@/lib/progression/client";
 import { xpToNextLevel } from "@/lib/progression/xp";
 import { getCountry } from "@/lib/progression/countries";
@@ -86,12 +87,14 @@ export default function ExplorerHub() {
           label="Streak"
           value={`${state.currentStreak} day${state.currentStreak === 1 ? "" : "s"}`}
           sub={`Best: ${state.longestStreak}`}
+          floatDelay={0.1}
         />
         <StatCard
           emoji="🔍"
           label="Discoveries"
           value={String(state.discoveryCount)}
           sub="Collected knowledge"
+          floatDelay={0.2}
         />
 
         {topMission && (
@@ -135,19 +138,23 @@ function StatCard({
   label,
   value,
   sub,
+  floatDelay = 0,
 }: {
   emoji: string;
   label: string;
   value: string;
   sub: string;
+  floatDelay?: number;
 }) {
   return (
-    <div className="rounded-2xl border-4 border-ink bg-white p-4 shadow-[0_4px_0_0_#0d0d0d]">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-ink/45">
-        {emoji} {label}
-      </p>
-      <p className="font-display text-2xl font-extrabold text-ink">{value}</p>
-      <p className="text-xs font-bold text-ink/45">{sub}</p>
-    </div>
+    <MicroFloat delay={floatDelay} y={4}>
+      <div className="rounded-2xl border-4 border-ink bg-white p-4 shadow-[0_4px_0_0_#0d0d0d]">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-ink/45">
+          {emoji} {label}
+        </p>
+        <p className="font-display text-2xl font-extrabold text-ink">{value}</p>
+        <p className="text-xs font-bold text-ink/45">{sub}</p>
+      </div>
+    </MicroFloat>
   );
 }

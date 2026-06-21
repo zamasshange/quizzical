@@ -3,6 +3,7 @@ import { ACHIEVEMENTS, BADGES } from "./achievements";
 import { classifyDiscovery, generateDailyMissions } from "./missions";
 import type {
   CategoryMastery,
+  DailyMission,
   ProgressionEventPayload,
   ProgressionEventResult,
   ProgressionState,
@@ -176,10 +177,13 @@ export function saveRawState(raw: RawState): void {
   }
 }
 
-function updateStreak(raw: RawState): void {
-  const today = todayKey();
-  if (raw.lastPlayDate === today) return;
+const STREAK_MILESTONES = [3, 7, 14, 30, 100];
 
+function updateStreak(raw: RawState): number | undefined {
+  const today = todayKey();
+  if (raw.lastPlayDate === today) return undefined;
+
+  const prev = raw.currentStreak;
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yKey = yesterday.toISOString().slice(0, 10);
@@ -192,14 +196,28 @@ function updateStreak(raw: RawState): void {
 
   raw.longestStreak = Math.max(raw.longestStreak, raw.currentStreak);
   raw.lastPlayDate = today;
+
+  for (const m of STREAK_MILESTONES) {
+    if (raw.currentStreak === m && prev < m) return m;
+  }
+  return undefined;
 }
 
-function bumpMission(raw: RawState, missionId: string, amount = 1): void {
+function bumpMission(
+  raw: RawState,
+  missionId: string,
+  amount = 1,
+): DailyMission | null {
+  let justCompleted: DailyMission | null = null;
   raw.missions = raw.missions.map((m) => {
     if (m.id !== missionId) return m;
+    const wasDone = m.completed;
     const progress = Math.min(m.target, m.progress + amount);
-    return { ...m, progress, completed: progress >= m.target };
+    const next = { ...m, progress, completed: progress >= m.target };
+    if (next.completed && !wasDone) justCompleted = next;
+    return next;
   });
+  return justCompleted;
 }
 
 function checkAchievements(raw: RawState): string[] {
@@ -250,8 +268,20 @@ export function applyProgressionEvent(
   let coinsEarned = 0;
   let streakBonus = 0;
   let discovery: (UserDiscovery & { isNew: boolean }) | undefined;
+  const missionsCompleted: { id: string; label: string; emoji: string }[] = [];
 
-  updateStreak(raw);
+  const streakMilestone = updateStreak(raw);
+
+  function trackMission(missionId: string, amount = 1) {
+    const done = bumpMission(raw, missionId, amount);
+    if (done) {
+      missionsCompleted.push({
+        id: done.id,
+        label: done.label,
+        emoji: done.emoji,
+      });
+    }
+  }
 
   if (payload.type === "correct_answer") {
     xpEarned += XP.correctAnswer;
@@ -268,8 +298,8 @@ export function applyProgressionEvent(
       raw.mastery[payload.quizCategory] = m;
     }
 
-    bumpMission(raw, "answer-10");
-    bumpMission(raw, "correct-10");
+    trackMission("answer-10");
+    trackMission("correct-10");
 
     if (payload.term) {
       const exists = raw.discoveries.some(
@@ -291,7 +321,7 @@ export function applyProgressionEvent(
         xpEarned += XP.newDiscovery;
         coinsEarned += COINS.newDiscovery;
         discovery = { ...d, isNew: true };
-        bumpMission(raw, "learn-5");
+        trackMission("learn-5");
       }
     }
   }
@@ -303,21 +333,21 @@ export function applyProgressionEvent(
       m.answered += 1;
       raw.mastery[payload.quizCategory] = m;
     }
-    bumpMission(raw, "answer-10");
+    trackMission("answer-10");
   }
 
   if (payload.type === "quiz_complete") {
     xpEarned += XP.quizComplete;
     coinsEarned += COINS.quizComplete;
     raw.stats.quizzesCompleted += 1;
-    bumpMission(raw, "complete-3");
+    trackMission("complete-3");
 
     if (!raw.firstQuizToday) {
       xpEarned += XP.firstQuizOfDay;
       raw.firstQuizToday = true;
     }
 
-    if (payload.quizCategory === "sports") bumpMission(raw, "sports-3");
+    if (payload.quizCategory === "sports") trackMission("sports-3");
 
     if (payload.correct === payload.total && (payload.total ?? 0) > 0) {
       xpEarned += XP.perfectQuiz;
@@ -328,7 +358,7 @@ export function applyProgressionEvent(
 
   if (payload.type === "daily_challenge") {
     xpEarned += XP.dailyChallenge;
-    bumpMission(raw, "daily-challenge", 1);
+    trackMission("daily-challenge", 1);
   }
 
   if (payload.type === "mission_complete" && payload.missionId) {
@@ -367,6 +397,8 @@ export function applyProgressionEvent(
     achievementsUnlocked,
     badgesUnlocked,
     streakBonus,
+    missionsCompleted,
+    streakMilestone,
     state: toProgressionState(raw),
   };
 }

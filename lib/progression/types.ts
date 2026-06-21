@@ -112,5 +112,9 @@ export type ProgressionEventResult = {
   achievementsUnlocked: string[];
   badgesUnlocked: string[];
   streakBonus: number;
+  /** Missions that just reached their target this event. */
+  missionsCompleted: { id: string; label: string; emoji: string }[];
+  /** Streak day count when a milestone (3, 7, 14, 30…) was hit. */
+  streakMilestone?: number;
   state: ProgressionState;
 };

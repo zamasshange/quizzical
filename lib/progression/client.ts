@@ -91,7 +91,6 @@ export function useProgression() {
 export async function recordProgressionEvent(
   payload: ProgressionEventPayload,
 ): Promise<ProgressionEventResult> {
-  const raw = loadRawState();
   const isSignedIn =
     typeof window !== "undefined" &&
     document.cookie.includes("__session");
@@ -103,11 +102,18 @@ export async function recordProgressionEvent(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (res.ok) return (await res.json()) as ProgressionEventResult;
+      if (res.ok) {
+        const result = (await res.json()) as ProgressionEventResult;
+        emit(result);
+        return result;
+      }
     } catch {
       /* local fallback */
     }
   }
 
-  return applyProgressionEvent(raw, payload);
+  const raw = loadRawState();
+  const result = applyProgressionEvent(raw, payload);
+  emit(result);
+  return result;
 }

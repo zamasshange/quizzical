@@ -229,6 +229,34 @@ body {
   }
 }
 
+@keyframes game-sparkle {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+.animate-game-sparkle {
+  animation: game-sparkle 2.4s ease-in-out infinite;
+}
+
+@keyframes micro-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.animate-micro-bob {
+  animation: micro-bob 3s ease-in-out infinite;
+}
+
 /* Dark "matrix" backdrop for the AI generator */
 .bg-matrix {
   background-color: #0c2e30;

@@ -4,6 +4,7 @@ import { Nunito, Baloo_2 } from "next/font/google";
 import "./globals.css";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
+import { AtmosphereProvider } from "@/lib/atmosphere/context";
 import ProgressionLayer from "@/components/ProgressionLayer";
 
 const nunito = Nunito({
@@ -78,8 +79,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <ClerkProvider signInUrl="/signin" signUpUrl="/signup">
-          {children}
-          <ProgressionLayer />
+          <AtmosphereProvider>
+            {children}
+            <ProgressionLayer />
+          </AtmosphereProvider>
         </ClerkProvider>
       </body>
     </html>

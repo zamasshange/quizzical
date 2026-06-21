@@ -39,6 +39,7 @@ import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
 import QuizIntro from "./progression/QuizIntro";
 import { recordProgressionEvent } from "@/lib/progression/client";
+import { useAtmosphereCategory } from "@/lib/atmosphere/useAtmosphereCategory";
 import { prefetchReveal } from "@/lib/revealPrefetch";
 
 import Button3D from "./Button3D";
@@ -190,6 +191,8 @@ export default function QuizPlayer({
 
   const [imagesLoading, setImagesLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+
+  useAtmosphereCategory(quiz.category);
 
   const { playCorrect, playWrong } = useGameSounds();
 

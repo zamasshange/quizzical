@@ -15,6 +15,11 @@ const SOUNDS = {
   quizComplete: { src: "/sounds/quiz-complete.mp3", volume: 0.5 },
   celebration: { src: "/sounds/celebration.mp3", volume: 0.7 },
   fairPlay: { src: "/sounds/fair-play.mp3", volume: 0.5 },
+  levelUp: { src: "/sounds/level-up.mp3", volume: 0.65 },
+  discovery: { src: "/sounds/discovery.mp3", volume: 0.55 },
+  achievement: { src: "/sounds/achievement.mp3", volume: 0.6 },
+  mission: { src: "/sounds/mission.mp3", volume: 0.55 },
+  streak: { src: "/sounds/streak.mp3", volume: 0.6 },
 } as const;
 
 type SoundKey = keyof typeof SOUNDS;
@@ -118,6 +123,35 @@ function fallbackBeep(key: SoundKey): void {
       tone(ac, 440.0, 0.14, 0.28, "sine", 0.12);
       tone(ac, 523.25, 0.28, 0.34, "sine", 0.12);
       break;
+    case "levelUp":
+      tone(ac, 392.0, 0, 0.12, "triangle", 0.18);
+      tone(ac, 523.25, 0.08, 0.12, "triangle", 0.18);
+      tone(ac, 659.25, 0.16, 0.14, "triangle", 0.2);
+      tone(ac, 783.99, 0.24, 0.28, "triangle", 0.22);
+      tone(ac, 1046.5, 0.34, 0.36, "triangle", 0.24);
+      break;
+    case "discovery":
+      tone(ac, 880, 0, 0.1, "sine", 0.14);
+      tone(ac, 1174.66, 0.08, 0.14, "sine", 0.16);
+      tone(ac, 1318.51, 0.18, 0.22, "sine", 0.14);
+      break;
+    case "achievement":
+      tone(ac, 523.25, 0, 0.14, "square", 0.1);
+      tone(ac, 659.25, 0.1, 0.14, "square", 0.1);
+      tone(ac, 783.99, 0.2, 0.2, "square", 0.1);
+      tone(ac, 1046.5, 0.32, 0.32, "triangle", 0.18);
+      break;
+    case "mission":
+      tone(ac, 440, 0, 0.12, "triangle", 0.14);
+      tone(ac, 554.37, 0.1, 0.14, "triangle", 0.14);
+      tone(ac, 659.25, 0.2, 0.24, "triangle", 0.16);
+      break;
+    case "streak":
+      tone(ac, 329.63, 0, 0.1, "sawtooth", 0.1);
+      tone(ac, 392, 0.08, 0.12, "sawtooth", 0.12);
+      tone(ac, 493.88, 0.16, 0.14, "sawtooth", 0.14);
+      tone(ac, 587.33, 0.26, 0.28, "triangle", 0.16);
+      break;
   }
 }
 
@@ -183,6 +217,26 @@ export function playCelebration(): void {
 
 export function playFairPlay(): void {
   playSound("fairPlay");
+}
+
+export function playLevelUp(): void {
+  playSound("levelUp");
+}
+
+export function playDiscovery(): void {
+  playSound("discovery");
+}
+
+export function playAchievement(): void {
+  playSound("achievement");
+}
+
+export function playMissionComplete(): void {
+  playSound("mission");
+}
+
+export function playStreakMilestone(): void {
+  playSound("streak");
 }
 
 /** Plays the appropriate end-of-quiz sound based on score. */
