@@ -6,6 +6,7 @@ import { playClick } from "@/lib/sound";
 import { AVATARS } from "@/lib/avatars";
 import { COUNTRIES, detectCountryCode } from "@/lib/progression/countries";
 import { completeOnboarding } from "@/lib/actions/onboarding";
+import CountryPicker from "@/components/CountryPicker";
 
 export default function OnboardingForm() {
   const [username, setUsername] = useState("");
@@ -68,23 +69,11 @@ export default function OnboardingForm() {
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-extrabold text-ink">Your country</span>
-        <div className="flex flex-wrap gap-2">
-          {COUNTRIES.map((c) => (
-            <button
-              key={c.code}
-              type="button"
-              disabled={isSaving}
-              onClick={() => setCountryCode(c.code)}
-              className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold ${
-                countryCode === c.code
-                  ? "border-ink bg-grass text-white"
-                  : "border-ink/20 bg-cream text-ink/60"
-              }`}
-            >
-              {c.flag} {c.name}
-            </button>
-          ))}
-        </div>
+        <CountryPicker
+          value={countryCode}
+          onChange={setCountryCode}
+          disabled={isSaving}
+        />
       </div>
 
       <div className="flex flex-col gap-2">

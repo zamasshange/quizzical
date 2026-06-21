@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { isValidAvatarId } from "@/lib/avatars";
 import { persistProgress } from "@/lib/progression/server";
 import { createEmptyRaw } from "@/lib/progression/defaults";
+import { DEFAULT_COUNTRY, normalizeCountryCode } from "@/lib/progression/countries";
 import {
   AVATAR_COOKIE_NAME,
   ONBOARDING_COOKIE_NAME,
@@ -20,7 +21,7 @@ function normalizeUsername(raw: string): string {
 export async function completeOnboarding(
   username: string,
   avatarId: string,
-  countryCode = "US",
+  countryCode = DEFAULT_COUNTRY,
 ): Promise<never> {
   const { userId } = await auth();
   if (!userId) {
@@ -77,7 +78,9 @@ export async function completeOnboarding(
   cookieStore.set(AVATAR_COOKIE_NAME, avatarId, cookieOpts);
   cookieStore.set(ONBOARDING_COOKIE_NAME, "1", cookieOpts);
 
-  const raw = createEmptyRaw(countryCode.slice(0, 2).toUpperCase());
+  const raw = createEmptyRaw(
+    normalizeCountryCode(countryCode) ?? DEFAULT_COUNTRY,
+  );
   await persistProgress(userId, normalized, avatarId, raw, 0, "onboarding");
 
   redirect("/");

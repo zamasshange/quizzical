@@ -20,6 +20,7 @@ import {
   todayKey,
   xpToNextLevel,
 } from "./xp";
+import { DEFAULT_COUNTRY } from "./countries";
 
 const STORAGE_KEY = "quizzical-progression";
 
@@ -40,7 +41,7 @@ type RawState = {
   firstQuizToday: boolean;
 };
 
-function defaultRaw(countryCode = "US"): RawState {
+function defaultRaw(countryCode = DEFAULT_COUNTRY): RawState {
   const today = todayKey();
   return {
     xp: 0,

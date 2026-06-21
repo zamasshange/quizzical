@@ -8,6 +8,7 @@ type Props = {
   continueLabel: string;
   onContinue: () => void;
   correctAnswer?: string;
+  knowledgeSaved?: boolean;
 };
 
 export default function MobileRevealBar({
@@ -15,6 +16,7 @@ export default function MobileRevealBar({
   continueLabel,
   onContinue,
   correctAnswer,
+  knowledgeSaved = false,
 }: Props) {
   const correct = status === "correct";
   const statusText =
@@ -42,6 +44,11 @@ export default function MobileRevealBar({
         {!correct && correctAnswer && (
           <span className="max-w-[45%] truncate text-right text-xs font-bold opacity-90">
             {correctAnswer}
+          </span>
+        )}
+        {correct && knowledgeSaved && (
+          <span className="max-w-[45%] truncate text-right text-[10px] font-semibold opacity-80">
+            Saved
           </span>
         )}
       </div>

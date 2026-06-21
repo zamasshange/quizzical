@@ -190,6 +190,7 @@ export default function QuizPlayer({
   const [answerImageUrls, setAnswerImageUrls] = useState<(string | null)[]>([]);
 
   const [imagesLoading, setImagesLoading] = useState(false);
+  const [knowledgeSaved, setKnowledgeSaved] = useState(false);
 
   useAtmosphereCategory(quiz.category);
 
@@ -364,6 +365,8 @@ export default function QuizPlayer({
           quizCategory: quiz.category,
           quizId: quiz.id,
           difficulty: profile.difficulty,
+        }).then((r) => {
+          if (r.discovery?.isNew) setKnowledgeSaved(true);
         });
 
       } else {
@@ -605,6 +608,7 @@ export default function QuizPlayer({
     if (isLast) {
 
       setPhase("finished");
+      setKnowledgeSaved(false);
 
       return;
 
@@ -617,6 +621,7 @@ export default function QuizPlayer({
     setTimeLeft(QUESTION_SECONDS);
 
     setPhase("playing");
+    setKnowledgeSaved(false);
 
   }
 
@@ -1234,6 +1239,7 @@ export default function QuizPlayer({
             onContinue={next}
             hideImage={showQuestionImage && !!questionImageUrl}
             variant="content"
+            knowledgeSaved={knowledgeSaved}
           />
         </div>
       )}
@@ -1243,6 +1249,7 @@ export default function QuizPlayer({
           status={revealStatus}
           continueLabel={continueLabel}
           onContinue={next}
+          knowledgeSaved={knowledgeSaved}
           correctAnswer={
             revealStatus !== "correct"
               ? question.answers[question.correct]

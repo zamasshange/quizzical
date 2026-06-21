@@ -6,6 +6,7 @@ import MicroFloat from "@/components/atmosphere/MicroFloat";
 import { useProgression } from "@/lib/progression/client";
 import { xpToNextLevel } from "@/lib/progression/xp";
 import { getCountry } from "@/lib/progression/countries";
+import CountryFlag from "@/components/CountryFlag";
 
 export default function ExplorerHub() {
   const { state, loaded } = useProgression();
@@ -49,8 +50,9 @@ export default function ExplorerHub() {
                 <span className="text-lg font-extrabold text-grass">{state.title}</span>
               </p>
               {country && (
-                <p className="mt-0.5 text-sm font-bold text-ink/55">
-                  {country.flag} {country.name}
+                <p className="mt-0.5 flex items-center gap-2 text-sm font-bold text-ink/55">
+                  <CountryFlag code={state.countryCode} width={24} />
+                  {country.name}
                   {state.rank ? ` · Rank #${state.rank}` : ""}
                 </p>
               )}

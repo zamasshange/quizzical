@@ -85,7 +85,11 @@ export function useProgression() {
     [isSignedIn],
   );
 
-  return { state, loaded, refresh, recordEvent };
+  const setCountryCode = useCallback((countryCode: string) => {
+    setState((prev) => ({ ...prev, countryCode }));
+  }, []);
+
+  return { state, loaded, refresh, recordEvent, setCountryCode };
 }
 
 export async function recordProgressionEvent(

@@ -8,6 +8,7 @@ import {
 } from "@/lib/gameProgress";
 import { useProgression } from "@/lib/progression/client";
 import { COUNTRIES } from "@/lib/progression/countries";
+import CountryFlag from "@/components/CountryFlag";
 
 type BoardEntry = {
   rank: number;
@@ -119,8 +120,11 @@ export default function LeaderboardClient() {
                   #{e.rank}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-extrabold text-ink">
-                    {country?.flag} {e.username}
+                  <p className="flex items-center gap-2 truncate font-extrabold text-ink">
+                    {country && (
+                      <CountryFlag code={country.code} width={22} />
+                    )}
+                    {e.username}
                   </p>
                   <p className="truncate text-xs font-bold text-ink/45">
                     Lv.{e.level} {e.title}

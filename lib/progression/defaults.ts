@@ -1,8 +1,9 @@
+import { DEFAULT_COUNTRY } from "./countries";
 import { generateDailyMissions } from "./missions";
 import { todayKey } from "./xp";
 import type { RawState } from "./engine";
 
-export function createEmptyRaw(countryCode = "US"): RawState {
+export function createEmptyRaw(countryCode = DEFAULT_COUNTRY): RawState {
   const today = todayKey();
   return {
     xp: 0,

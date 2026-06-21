@@ -35,10 +35,13 @@ export default function RevealCard({
   onContinue,
   hideImage = false,
   variant = "full",
+  knowledgeSaved = false,
 }: {
   category: string;
   term: string;
   status: RevealStatus;
+  /** Subtle inline hint when this answer was newly saved (no popup). */
+  knowledgeSaved?: boolean;
   continueLabel: string;
   onContinue: () => void;
   /** Skip the big image for fact reveals (image games already show the subject). */
@@ -194,6 +197,12 @@ export default function RevealCard({
         ) : showContent && data ? (
           <RevealBody data={data} hideImage={hideImage} />
         ) : null}
+
+        {knowledgeSaved && correct && showContent && (
+          <p className="text-[11px] font-semibold text-ink/40">
+            Saved to Knowledge Book
+          </p>
+        )}
       </div>
 
       {showActions && (

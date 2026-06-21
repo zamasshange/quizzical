@@ -14,12 +14,15 @@ import {
 import { formatHistoryDate } from "@/lib/completeGame";
 import { useProgression } from "@/lib/progression/client";
 import { xpToNextLevel } from "@/lib/progression/xp";
-import { COUNTRIES, getCountry } from "@/lib/progression/countries";
+import { getCountry } from "@/lib/progression/countries";
 import { AVATARS, getAvatarById } from "@/lib/avatars";
+import CountryFlag from "@/components/CountryFlag";
+import CountryPicker from "@/components/CountryPicker";
+import type { ProgressionState } from "@/lib/progression/types";
 
 export default function ProfileClient() {
   const { user, isSignedIn } = useUser();
-  const { state, loaded, refresh } = useProgression();
+  const { state, loaded, refresh, setCountryCode } = useProgression();
   const username =
     (user?.publicMetadata?.username as string | undefined) ?? "Player";
   const avatarId =
@@ -39,15 +42,21 @@ export default function ProfileClient() {
   const country = getCountry(state.countryCode);
 
   async function updateCountry(code: string) {
+    setCountryCode(code);
     try {
-      await fetch("/api/progression", {
+      const res = await fetch("/api/progression", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ countryCode: code }),
       });
+      if (res.ok) {
+        const data = (await res.json()) as ProgressionState;
+        setCountryCode(data.countryCode);
+        return;
+      }
       await refresh();
     } catch {
-      /* local only */
+      await refresh();
     }
   }
 
@@ -68,8 +77,9 @@ export default function ProfileClient() {
               Level {state.level} · {state.title}
             </p>
             {country && (
-              <p className="text-sm font-bold text-ink/55">
-                {country.flag} {country.name}
+              <p className="flex items-center gap-2 text-sm font-bold text-ink/55">
+                <CountryFlag code={state.countryCode} width={28} />
+                {country.name}
                 {state.rank ? ` · Global rank #${state.rank}` : ""}
               </p>
             )}
@@ -178,22 +188,13 @@ export default function ProfileClient() {
           {isSignedIn && (
             <section>
               <h2 className="mb-2 text-lg font-black">Represent your country</h2>
-              <div className="flex flex-wrap gap-2">
-                {COUNTRIES.map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    onClick={() => updateCountry(c.code)}
-                    className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold ${
-                      state.countryCode === c.code
-                        ? "border-ink bg-grass text-white"
-                        : "border-ink/20 bg-white text-ink/60 hover:border-ink/40"
-                    }`}
-                  >
-                    {c.flag} {c.name}
-                  </button>
-                ))}
-              </div>
+              <p className="mb-3 text-sm font-semibold text-ink/50">
+                Pick your flag — it shows on your profile and the country leaderboard.
+              </p>
+              <CountryPicker
+                value={state.countryCode}
+                onChange={(code) => void updateCountry(code)}
+              />
             </section>
           )}
         </>

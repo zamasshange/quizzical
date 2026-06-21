@@ -123,6 +123,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(DEFAULT_TIMER);
   const [showHint, setShowHint] = useState(false);
+  const [knowledgeSaved, setKnowledgeSaved] = useState(false);
   const { playCorrect, playWrong } = useGameSounds();
 
   useAtmosphereCategory(mode.quizCategorySlug ?? "entertainment");
@@ -218,6 +219,8 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           category: mode.category,
           quizCategory: mode.quizCategorySlug ?? "entertainment",
           difficulty,
+        }).then((r) => {
+          if (r.discovery?.isNew) setKnowledgeSaved(true);
         });
       } else {
         playWrong();
@@ -357,6 +360,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   function next() {
     if (isLast) {
       setPhase("finished");
+      setKnowledgeSaved(false);
       return;
     }
     setIndex((i) => i + 1);
@@ -364,6 +368,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     setTimeLeft(timerSeconds);
     setShowHint(false);
     setPhase("playing");
+    setKnowledgeSaved(false);
   }
 
   function restart() {
@@ -825,6 +830,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           status={revealStatus}
           continueLabel={continueLabel}
           onContinue={next}
+          knowledgeSaved={knowledgeSaved}
           correctAnswer={
             revealStatus !== "correct"
               ? question.answers[question.correct]
@@ -844,6 +850,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             onContinue={next}
             hideImage
             variant="content"
+            knowledgeSaved={knowledgeSaved}
           />
         </div>
       )}

@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { DEFAULT_COUNTRY } from "./countries";
 import { generateDailyMissions } from "./missions";
 import { todayKey } from "./xp";
 import type { RawState } from "./engine";
@@ -13,7 +14,7 @@ export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscover
     currentStreak: (row.current_streak as number) ?? 0,
     longestStreak: (row.longest_streak as number) ?? 0,
     lastPlayDate: (row.last_play_date as string) ?? null,
-    countryCode: (row.country_code as string) ?? "US",
+    countryCode: (row.country_code as string) ?? DEFAULT_COUNTRY,
     discoveries,
     mastery: (row.mastery as RawState["mastery"]) ?? {},
     unlockedAchievements: (row.unlocked_achievements as string[]) ?? [],

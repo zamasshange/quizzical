@@ -17,9 +17,8 @@ export default function XpFloatLayer() {
 
   useEffect(() => {
     return onProgressionEvent((result) => {
-      if (result.xpEarned <= 0 || result.discovery?.isNew) return;
+      if (result.xpEarned <= 0 || result.leveledUp) return;
       if (
-        result.leveledUp ||
         result.achievementsUnlocked.length > 0 ||
         result.badgesUnlocked.length > 0
       ) {

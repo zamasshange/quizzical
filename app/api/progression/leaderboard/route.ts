@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_COUNTRY } from "@/lib/progression/countries";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 type BoardEntry = {
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
         avatarId: u?.avatar_id ?? null,
         xp: xpSum,
         level,
-        countryCode: u?.country_code ?? "US",
+        countryCode: u?.country_code ?? DEFAULT_COUNTRY,
         title: "Knowledge Explorer",
       };
     });

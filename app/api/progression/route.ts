@@ -7,6 +7,7 @@ import {
   persistProgress,
 } from "@/lib/progression/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { normalizeCountryCode } from "@/lib/progression/countries";
 import type { ProgressionState } from "@/lib/progression/types";
 
 /** GET /api/progression — full explorer state */
@@ -35,7 +36,10 @@ export async function PATCH(req: Request) {
 
   const body = (await req.json()) as { countryCode?: string };
   const raw = await loadUserProgress(userId);
-  if (body.countryCode) raw.countryCode = body.countryCode;
+  if (body.countryCode) {
+    const code = normalizeCountryCode(body.countryCode);
+    if (code) raw.countryCode = code;
+  }
 
   const meta = sessionClaims?.publicMetadata as
     | { username?: string; avatarId?: string }
