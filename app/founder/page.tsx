@@ -9,8 +9,8 @@ import {
   InfoProse,
   InfoSection,
 } from "@/components/info/InfoPageParts";
-import { founderMetadata, absoluteUrl } from "@/lib/seo";
-import { breadcrumbJsonLd } from "@/lib/seoStructuredData";
+import { founderMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, personJsonLd } from "@/lib/seoStructuredData";
 
 export const metadata: Metadata = founderMetadata();
 
@@ -71,23 +71,7 @@ export default function FounderPage() {
             { name: "Home", path: "/" },
             { name: "Founder", path: "/founder" },
           ]),
-          {
-            "@context": "https://schema.org",
-            "@type": "Person",
-            name: "Zama Shange",
-            birthDate: "2007-06-20",
-            birthPlace: {
-              "@type": "Place",
-              name: "Durban, South Africa",
-            },
-            jobTitle: "Founder, Designer & Developer",
-            worksFor: {
-              "@type": "Organization",
-              name: "BDL Corp",
-            },
-            url: absoluteUrl("/founder"),
-            knowsAbout: FIELDS,
-          },
+          personJsonLd(),
         ]}
       />
 

@@ -3,8 +3,10 @@ import { categories, quizzes } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import { absoluteUrl } from "@/lib/seo";
 import { getAllSeoTopics } from "@/lib/seoTopics";
+import { ALL_ENTITIES } from "@/lib/seoEntities";
+import { entityPath } from "@/lib/seoEntitySlugs";
 
-/** Served at /sitemap.xml — lists every indexable URL including keyword topic pages. */
+/** Served at /sitemap.xml — lists every indexable URL including programmatic entity pages. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
@@ -14,6 +16,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: absoluteUrl("/discover"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
     },
     {
       url: absoluteUrl("/ai"),
@@ -107,11 +115,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
+  const entityPages: MetadataRoute.Sitemap = ALL_ENTITIES.map((entity) => ({
+    url: absoluteUrl(entityPath(entity.type, entity.slug)),
+    lastModified: now,
+    changeFrequency: entity.type === "country" ? ("monthly" as const) : ("weekly" as const),
+    priority: entity.type === "country" ? 0.68 : 0.7,
+  }));
+
   return [
     ...staticPages,
     ...topicPages,
     ...categoryPages,
     ...quizPages,
     ...imageGames,
+    ...entityPages,
   ];
 }

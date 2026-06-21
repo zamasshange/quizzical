@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Nunito, Baloo_2 } from "next/font/google";
 import "./globals.css";
-import { SITE_NAME, SITE_URL, absoluteUrl, SITE_TAGLINE } from "@/lib/seo";
+import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
 import ProgressionLayer from "@/components/ProgressionLayer";
 
@@ -21,11 +21,11 @@ const baloo = Baloo_2({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    default: "Quizzical | Play Free AI-Powered Quiz Games Online",
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Quizzical (quizzical.site) — free quiz games online. Picture quizzes, trivia, flags, sports, movies, and AI games by BDL Corp. Play quizzical games and learn after every answer.",
+    "Challenge yourself with hundreds of quiz games covering geography, sports, movies, history, science, music, and more. Learn, compete, and become a Knowledge Explorer.",
   applicationName: SITE_NAME,
   keywords: [...BASE_KEYWORDS, ...BRAND_KEYWORDS],
   authors: [
@@ -42,9 +42,9 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Quizzical Games Online`,
+    title: "Quizzical | Play Free AI-Powered Quiz Games Online",
     description:
-      "Quizzical games — free picture quizzes, trivia, flags, sports, and AI quiz generator at quizzical.site.",
+      "Challenge yourself with hundreds of quiz games covering geography, sports, movies, history, science, and more. Learn, compete, and become a Knowledge Explorer.",
     images: [
       {
         url: absoluteUrl("/logo.png"),
@@ -56,8 +56,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Quizzical Games`,
-    description: "Quizzical games — free quiz and trivia at quizzical.site.",
+    title: "Quizzical | Free AI-Powered Quiz Games",
+    description:
+      "Play free quiz games online — geography, sports, movies, trivia, and AI-powered challenges on Quizzical.",
     images: [absoluteUrl("/logo.png")],
   },
   robots: { index: true, follow: true },

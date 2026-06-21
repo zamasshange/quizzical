@@ -154,6 +154,59 @@ function withSlug(partial: Omit<SeoEntity, "slug">): SeoEntity {
   return { ...partial, slug: slugifyEntity(partial.name) };
 }
 
+/** Pre-render high-traffic countries at build; others via on-demand ISR. */
+export const PRIORITY_COUNTRY_SLUGS = new Set([
+  "south-africa",
+  "zimbabwe",
+  "nigeria",
+  "kenya",
+  "ghana",
+  "united-states",
+  "united-kingdom",
+  "france",
+  "germany",
+  "india",
+  "australia",
+  "canada",
+  "brazil",
+  "japan",
+  "mexico",
+  "italy",
+  "spain",
+  "portugal",
+  "netherlands",
+  "china",
+  "argentina",
+  "egypt",
+  "morocco",
+  "israel",
+  "turkey",
+  "russia",
+  "ukraine",
+  "poland",
+  "sweden",
+  "norway",
+  "new-zealand",
+  "ireland",
+  "belgium",
+  "switzerland",
+  "austria",
+  "greece",
+  "thailand",
+  "vietnam",
+  "indonesia",
+  "philippines",
+  "south-korea",
+  "saudi-arabia",
+  "united-arab-emirates",
+  "qatar",
+  "colombia",
+  "chile",
+  "peru",
+  "cuba",
+  "jamaica",
+]);
+
 const COUNTRY_ENTITIES: SeoEntity[] = ALL_COUNTRIES.map((c) =>
   withSlug({
     name: c.name,
@@ -177,6 +230,16 @@ for (const e of ALL_ENTITIES) {
 
 export function getEntitiesByType(type: SeoEntityType): SeoEntity[] {
   return ALL_ENTITIES.filter((e) => e.type === type);
+}
+
+export function getStaticEntityParams(type: SeoEntityType): { slug: string }[] {
+  const all = getEntitiesByType(type);
+  if (type === "country") {
+    return all
+      .filter((e) => PRIORITY_COUNTRY_SLUGS.has(e.slug))
+      .map((e) => ({ slug: e.slug }));
+  }
+  return all.map((e) => ({ slug: e.slug }));
 }
 
 export function getEntity(type: SeoEntityType, slug: string): SeoEntity | undefined {

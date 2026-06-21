@@ -8,7 +8,8 @@ import { FLAGS_PER_ROUND, isFlagsQuiz } from "@/lib/flagQuiz";
 import { COUNTRY_COUNT } from "@/lib/allCountries";
 import JsonLd from "@/components/JsonLd";
 import { quizMetadata } from "@/lib/seo";
-import { breadcrumbJsonLd, quizJsonLd } from "@/lib/seoStructuredData";
+import { breadcrumbJsonLd, quizFaqJsonLd, quizJsonLd } from "@/lib/seoStructuredData";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 
 export function generateStaticParams() {
   return quizzes.map((quiz) => ({ id: quiz.id }));
@@ -41,12 +42,14 @@ export default async function QuizOverviewPage(
   const poolNote = isFlagsQuiz(quiz.id)
     ? `${COUNTRY_COUNT} countries in the pool`
     : null;
+  const faqLd = isFlagsQuiz(quiz.id) ? null : quizFaqJsonLd(quiz);
 
   return (
     <SiteShell>
       <JsonLd
         data={[
           quizJsonLd(quiz, category?.name),
+          ...(faqLd ? [faqLd] : []),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
             ...(category
@@ -136,6 +139,8 @@ export default async function QuizOverviewPage(
                 ▶ Play
               </Button3D>
             </div>
+
+            <SeoInternalLinks quizId={quiz.id} categorySlug={quiz.category} />
           </div>
         </div>
       </div>

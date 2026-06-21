@@ -9,8 +9,10 @@ const COMPANY_LINKS = [
 ];
 
 const RESOURCE_LINKS = [
+  { href: "/discover", label: "Discover" },
   { href: "/topics", label: "Topics" },
   { href: "/ai", label: "AI Quiz Generator" },
+  { href: "/knowledge-book", label: "Knowledge Book" },
   { href: "/#picture-games", label: "Picture games" },
 ];
 

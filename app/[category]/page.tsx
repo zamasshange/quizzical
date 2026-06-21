@@ -21,6 +21,7 @@ import {
   breadcrumbJsonLd,
   categoryCollectionJsonLd,
 } from "@/lib/seoStructuredData";
+import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 
 export function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
@@ -140,6 +141,8 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
 
         {/* Honest cross-sell from other categories */}
         <QuizRow title="More quizzes to explore" quizzes={others} />
+
+        <SeoInternalLinks categorySlug={found.slug} />
       </main>
 
       <Footer />

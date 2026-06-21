@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { categories, getQuiz, quizzes } from "@/lib/quizzes";
 import { getCategory } from "@/lib/quizzes";
-import type { SeoEntity } from "@/lib/seoEntities";
+import type { SeoEntity } from "@/lib/seoEntitySlugs";
 import { entityPath, ENTITY_TYPE_PATH } from "@/lib/seoEntitySlugs";
 
 type Props = {

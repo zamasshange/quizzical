@@ -4,7 +4,7 @@ import type { SeoTopic } from "./seoTopics";
 import { topicCount } from "./seoTopics";
 import type { GameMode } from "./imageQuestions";
 import { getCategory } from "./quizzes";
-import type { SeoEntity } from "./seoEntities";
+import type { SeoEntity } from "./seoEntitySlugs";
 import {
   ENTITY_TYPE_LABELS,
   entityPath,

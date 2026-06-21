@@ -1,7 +1,7 @@
 import { absoluteUrl, SITE_NAME, SITE_URL } from "./seo";
 import type { Category, Quiz } from "./quizzes";
 import type { GameMode } from "./imageQuestions";
-import type { SeoEntity } from "./seoEntities";
+import type { SeoEntity } from "./seoEntitySlugs";
 import { ENTITY_TYPE_LABELS } from "./seoEntitySlugs";
 
 const BDL_CORP = {
