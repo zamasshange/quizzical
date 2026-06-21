@@ -37,7 +37,7 @@ import { useCompleteGame } from "@/lib/completeGame";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
-import QuizIntro from "./progression/QuizIntro";
+import QuizLoadingOverlay from "./progression/QuizLoadingOverlay";
 import { recordProgressionEvent } from "@/lib/progression/client";
 import { useAtmosphereCategory } from "@/lib/atmosphere/useAtmosphereCategory";
 import { prefetchReveal } from "@/lib/revealPrefetch";
@@ -190,8 +190,6 @@ export default function QuizPlayer({
   const [answerImageUrls, setAnswerImageUrls] = useState<(string | null)[]>([]);
 
   const [imagesLoading, setImagesLoading] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
-  const dismissIntro = useCallback(() => setShowIntro(false), []);
 
   useAtmosphereCategory(quiz.category);
 
@@ -306,7 +304,6 @@ export default function QuizPlayer({
     setSelected(saved.selected);
     setPendingResume(null);
     setReady(true);
-    setShowIntro(false);
   }
 
 
@@ -316,6 +313,14 @@ export default function QuizPlayer({
   const showQuestionImage = usesQuestionImages(visualMode);
 
   const showAnswerImages = usesAnswerImages(visualMode);
+
+  /** Only block the UI while assets are actively being fetched (not when cached/prefetched). */
+  const waitingForData = Boolean(
+    imagesLoading &&
+      visualMode &&
+      showQuestionImage &&
+      !questionImageUrl,
+  );
 
 
 
@@ -577,7 +582,7 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (!ready || showIntro || phase !== "playing" || paused) return;
+    if (!ready || waitingForData || phase !== "playing" || paused) return;
 
     if (timeLeft <= 0) {
 
@@ -591,7 +596,7 @@ export default function QuizPlayer({
 
     return () => clearTimeout(t);
 
-  }, [ready, showIntro, phase, timeLeft, lockAnswer, paused]);
+  }, [ready, waitingForData, phase, timeLeft, lockAnswer, paused]);
 
 
 
@@ -901,19 +906,12 @@ export default function QuizPlayer({
   return (
 
     <>
-      {showIntro && (
-        <QuizIntro
-          title={quiz.title}
-          emoji={quiz.emoji}
-          categorySlug={quiz.category}
-          facts={[
-            `${questions.length} questions`,
-            profile.difficulty,
-            profile.previewFact,
-          ]}
-          onDone={dismissIntro}
-        />
-      )}
+      <QuizLoadingOverlay
+        open={waitingForData}
+        title={quiz.title}
+        emoji={quiz.emoji}
+        categorySlug={quiz.category}
+      />
     <div
 
       className={`mx-auto flex flex-col gap-5 ${

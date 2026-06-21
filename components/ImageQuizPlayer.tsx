@@ -27,7 +27,7 @@ import { prefetchReveal } from "@/lib/revealPrefetch";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
 import GamePauseOverlay from "./GamePauseOverlay";
-import QuizIntro from "./progression/QuizIntro";
+import QuizLoadingOverlay from "./progression/QuizLoadingOverlay";
 import { useAtmosphereCategory } from "@/lib/atmosphere/useAtmosphereCategory";
 import type { GameMode } from "@/lib/imageQuestions";
 import {
@@ -123,19 +123,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(DEFAULT_TIMER);
   const [showHint, setShowHint] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const introShownRef = useRef(false);
-  const dismissIntro = useCallback(() => setShowIntro(false), []);
   const { playCorrect, playWrong } = useGameSounds();
 
   useAtmosphereCategory(mode.quizCategorySlug ?? "entertainment");
-
-  useEffect(() => {
-    if (status === "ready" && !introShownRef.current) {
-      introShownRef.current = true;
-      setShowIntro(true);
-    }
-  }, [status]);
 
   useQuizFinishSound(phase, correctCount, questions.length);
 
@@ -255,14 +245,14 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   useEffect(() => {
     if (status !== "ready") return;
-    if (phase !== "playing" || paused || showIntro) return;
+    if (phase !== "playing" || paused) return;
     if (timeLeft <= 0) {
       lockAnswer(null);
       return;
     }
     const t = setTimeout(() => setTimeLeft((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [status, phase, timeLeft, lockAnswer, paused, showIntro]);
+  }, [status, phase, timeLeft, lockAnswer, paused]);
 
   const gKey =
     status === "ready" || status === "loading"
@@ -410,8 +400,6 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     setSelected(saved.selected);
     if (saved.timerSeconds) setTimerSeconds(saved.timerSeconds as TimerSeconds);
     setPendingResume(null);
-    introShownRef.current = true;
-    setShowIntro(false);
     setStatus("ready");
     setPhase(saved.phase);
   }
@@ -504,12 +492,17 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   if (status === "loading") {
     return (
-      <Centered>
-        <span className="text-5xl">{mode.emoji}</span>
-        <p className="font-display text-xl font-extrabold text-ink/60">
-          {loadProgress || `Building your ${difficulty} quiz…`}
-        </p>
-      </Centered>
+      <>
+        <QuizLoadingOverlay
+          open
+          title={mode.title}
+          emoji={mode.emoji}
+          categorySlug={mode.quizCategorySlug ?? "entertainment"}
+          message={loadProgress || "Building quiz…"}
+        />
+        {/* Placeholder keeps layout stable while overlay covers the screen */}
+        <div className="mx-auto min-h-[40vh] max-w-xl" aria-hidden />
+      </>
     );
   }
 
@@ -619,16 +612,6 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const continueLabel = isLast ? "See results" : "Continue →";
 
   return (
-    <>
-      {showIntro && (
-        <QuizIntro
-          title={mode.title}
-          emoji={mode.emoji}
-          categorySlug={mode.quizCategorySlug ?? "entertainment"}
-          facts={[`${questions.length} questions`, difficulty, mode.category]}
-          onDone={dismissIntro}
-        />
-      )}
     <div
       className={`mx-auto flex w-full max-w-5xl flex-col gap-4 ${
         revealed ? "pb-32 md:pb-0" : ""
@@ -874,7 +857,6 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         />
       )}
     </div>
-    </>
   );
 }
 
