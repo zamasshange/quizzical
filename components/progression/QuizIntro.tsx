@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CategoryBackground from "@/components/atmosphere/CategoryBackground";
 import { getCategoryTheme } from "@/lib/atmosphere/categoryThemes";
 
@@ -13,6 +13,9 @@ const MESSAGES: Record<string, string[]> = {
   entertainment: ["🎬 Loading movie posters...", "🎭 Preparing entertainment trivia..."],
   default: ["🧠 Warming up your brain...", "✨ Loading challenge...", "📚 Gathering knowledge..."],
 };
+
+/** Total time before the intro auto-dismisses (ms). */
+const INTRO_MS = 1800;
 
 function pickMessage(categorySlug?: string): string {
   const list = MESSAGES[categorySlug ?? ""] ?? MESSAGES.default;
@@ -30,22 +33,30 @@ type Props = {
 export default function QuizIntro({ title, emoji, categorySlug, facts = [], onDone }: Props) {
   const [visible, setVisible] = useState(true);
   const [step, setStep] = useState(0);
+  const finishedRef = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   const message = useMemo(() => pickMessage(categorySlug), [categorySlug]);
   const theme = getCategoryTheme(categorySlug);
 
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setVisible(false);
+    onDoneRef.current();
+  }, []);
+
   useEffect(() => {
-    const t1 = setTimeout(() => setStep(1), 400);
-    const t2 = setTimeout(() => setStep(2), 900);
-    const t3 = setTimeout(() => {
-      setVisible(false);
-      setTimeout(onDone, 450);
-    }, 2200);
+    const t1 = setTimeout(() => setStep(1), 300);
+    const t2 = setTimeout(() => setStep(2), 700);
+    const t3 = setTimeout(finish, INTRO_MS);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [onDone]);
+  }, [finish]);
 
   return (
     <AnimatePresence>
@@ -55,6 +66,10 @@ export default function QuizIntro({ title, emoji, categorySlug, facts = [], onDo
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          role="dialog"
+          aria-label={`Starting ${title}`}
+          aria-live="polite"
         >
           <motion.div
             initial={{ scale: 0.85, y: 24 }}
@@ -63,7 +78,7 @@ export default function QuizIntro({ title, emoji, categorySlug, facts = [], onDo
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
             className="relative w-full max-w-md overflow-hidden rounded-3xl border-4 border-ink shadow-[0_8px_0_0_#0d0d0d]"
           >
-            <CategoryBackground categorySlug={categorySlug} showParticles>
+            <CategoryBackground categorySlug={categorySlug} showParticles={false}>
               <div
                 className="absolute inset-0 opacity-90"
                 style={{
@@ -100,7 +115,6 @@ export default function QuizIntro({ title, emoji, categorySlug, facts = [], onDo
                 )}
 
                 <motion.p
-                  key={message}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: step >= 2 ? 1 : 0.4 }}
                   className="mt-5 text-sm font-extrabold text-lime"
@@ -113,7 +127,7 @@ export default function QuizIntro({ title, emoji, categorySlug, facts = [], onDo
                     className="h-full bg-lime"
                     initial={{ width: "0%" }}
                     animate={{ width: "100%" }}
-                    transition={{ duration: 2, ease: "easeInOut" }}
+                    transition={{ duration: INTRO_MS / 1000, ease: "linear" }}
                   />
                 </div>
               </div>

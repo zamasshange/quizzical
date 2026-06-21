@@ -125,6 +125,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [showHint, setShowHint] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const introShownRef = useRef(false);
+  const dismissIntro = useCallback(() => setShowIntro(false), []);
   const { playCorrect, playWrong } = useGameSounds();
 
   useAtmosphereCategory(mode.quizCategorySlug ?? "entertainment");
@@ -254,14 +255,14 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   useEffect(() => {
     if (status !== "ready") return;
-    if (phase !== "playing" || paused) return;
+    if (phase !== "playing" || paused || showIntro) return;
     if (timeLeft <= 0) {
       lockAnswer(null);
       return;
     }
     const t = setTimeout(() => setTimeLeft((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [status, phase, timeLeft, lockAnswer, paused]);
+  }, [status, phase, timeLeft, lockAnswer, paused, showIntro]);
 
   const gKey =
     status === "ready" || status === "loading"
@@ -409,6 +410,8 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     setSelected(saved.selected);
     if (saved.timerSeconds) setTimerSeconds(saved.timerSeconds as TimerSeconds);
     setPendingResume(null);
+    introShownRef.current = true;
+    setShowIntro(false);
     setStatus("ready");
     setPhase(saved.phase);
   }
@@ -623,7 +626,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           emoji={mode.emoji}
           categorySlug={mode.quizCategorySlug ?? "entertainment"}
           facts={[`${questions.length} questions`, difficulty, mode.category]}
-          onDone={() => setShowIntro(false)}
+          onDone={dismissIntro}
         />
       )}
     <div

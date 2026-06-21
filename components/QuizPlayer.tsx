@@ -191,6 +191,7 @@ export default function QuizPlayer({
 
   const [imagesLoading, setImagesLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const dismissIntro = useCallback(() => setShowIntro(false), []);
 
   useAtmosphereCategory(quiz.category);
 
@@ -305,6 +306,7 @@ export default function QuizPlayer({
     setSelected(saved.selected);
     setPendingResume(null);
     setReady(true);
+    setShowIntro(false);
   }
 
 
@@ -575,7 +577,7 @@ export default function QuizPlayer({
 
   useEffect(() => {
 
-    if (!ready || phase !== "playing" || paused) return;
+    if (!ready || showIntro || phase !== "playing" || paused) return;
 
     if (timeLeft <= 0) {
 
@@ -589,7 +591,7 @@ export default function QuizPlayer({
 
     return () => clearTimeout(t);
 
-  }, [ready, phase, timeLeft, lockAnswer, paused]);
+  }, [ready, showIntro, phase, timeLeft, lockAnswer, paused]);
 
 
 
@@ -909,7 +911,7 @@ export default function QuizPlayer({
             profile.difficulty,
             profile.previewFact,
           ]}
-          onDone={() => setShowIntro(false)}
+          onDone={dismissIntro}
         />
       )}
     <div
