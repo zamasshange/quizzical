@@ -16,16 +16,20 @@ export default function CountryFlag({
 }: CountryFlagProps) {
   const country = getCountry(code);
   const label = title ?? country?.name ?? code;
+  const height = Math.round((width * 2) / 3);
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={flagImageUrl(code, width)}
       alt={`${label} flag`}
-      width={Math.round(width * 0.75)}
-      height={Math.round(width * 0.5)}
+      width={width}
+      height={height}
       loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
       className={`inline-block shrink-0 rounded-sm border border-ink/20 object-cover shadow-[0_1px_0_0_rgba(13,13,13,0.15)] ${className}`}
+      style={{ width, height, minWidth: width, minHeight: height }}
     />
   );
 }

@@ -1,4 +1,5 @@
 import type { CountryReveal } from "@/lib/reveal/types";
+import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
 
 function compactPopulation(n: number | null): string | null {
   if (!n) return null;
@@ -22,6 +23,7 @@ export function CountryRevealCard({
   if (data.region) facts.push(["Continent", data.region]);
 
   const showImage = !hideImage && data.image_url;
+  const flagSrc = data.flag_url ? proxiedQuizImageUrl(data.flag_url) : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -41,10 +43,10 @@ export function CountryRevealCard({
             loading="lazy"
             className="relative h-full w-full object-contain"
           />
-          {data.flag_url && (
+          {flagSrc && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={data.flag_url}
+              src={flagSrc}
               alt={`${data.name} flag`}
               className="absolute bottom-2 left-2 h-9 w-14 rounded-md border-2 border-ink object-cover shadow-[0_2px_0_0_#0d0d0d]"
             />
@@ -53,10 +55,10 @@ export function CountryRevealCard({
       )}
 
       <div className="flex items-center gap-3">
-        {hideImage && data.flag_url && (
+        {hideImage && flagSrc && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={data.flag_url}
+            src={flagSrc}
             alt={`${data.name} flag`}
             className="h-9 w-14 shrink-0 rounded-md border-2 border-ink object-cover shadow-[0_2px_0_0_#0d0d0d]"
           />

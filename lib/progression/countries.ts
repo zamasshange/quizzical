@@ -1,3 +1,5 @@
+import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
+
 /** Supported countries for representation on profiles and leaderboards. */
 
 export const DEFAULT_COUNTRY = "ZA";
@@ -37,10 +39,11 @@ export function normalizeCountryCode(code: string): string | null {
   return COUNTRIES.some((c) => c.code === normalized) ? normalized : null;
 }
 
-/** PNG flag from flagcdn.com (same source as quiz country reveals). */
+/** PNG flag from flagcdn.com, proxied same-origin for reliable production loads. */
 export function flagImageUrl(code: string, width = 40): string {
   const iso2 = normalizeCountryCode(code) ?? DEFAULT_COUNTRY;
-  return `https://flagcdn.com/w${width}/${iso2.toLowerCase()}.png`;
+  const direct = `https://flagcdn.com/w${width}/${iso2.toLowerCase()}.png`;
+  return proxiedQuizImageUrl(direct);
 }
 
 const TIMEZONE_COUNTRY: Record<string, string> = {
