@@ -8,9 +8,9 @@ import { BASE_KEYWORDS } from "@/lib/seoKeywords";
 export const metadata: Metadata = buildMetadata({
   title: "Leaderboard",
   description:
-    "Top scores on Quizzical — compete on trivia quizzes and picture games. Sign in to save your scores globally.",
+    "Global XP leaderboard on Quizzical — compete by country, category, and weekly rankings. Live updates as players earn XP.",
   path: "/leaderboard",
-  keywords: [...BASE_KEYWORDS, "quiz leaderboard", "high scores", "top players"],
+  keywords: [...BASE_KEYWORDS, "quiz leaderboard", "XP rankings", "top players"],
 });
 
 export default function LeaderboardPage() {
@@ -22,8 +22,8 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="mt-2 font-bold text-ink/60">
-          Top scores across Quizzical. Sign in to appear on the global board when
-          Supabase is connected.
+          Compete globally by XP. Rankings update live as players learn, discover,
+          and complete quizzes.
         </p>
         <div className="mt-6">
           <LeaderboardClient />

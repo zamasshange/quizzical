@@ -5,6 +5,7 @@ import {
   fetchUserRank,
   loadUserProgress,
   persistProgress,
+  syncProfileFromClerk,
 } from "@/lib/progression/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { normalizeCountryCode } from "@/lib/progression/countries";
@@ -12,9 +13,17 @@ import type { ProgressionState } from "@/lib/progression/types";
 
 /** GET /api/progression — full explorer state */
 export async function GET() {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  }
+
+  const meta = sessionClaims?.publicMetadata as
+    | { username?: string; avatarId?: string; onboardingComplete?: boolean }
+    | undefined;
+
+  if (isSupabaseConfigured()) {
+    await syncProfileFromClerk(userId, meta);
   }
 
   const raw = await loadUserProgress(userId);

@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { CLERK_USER_ID_FILTER } from "@/lib/progression/clerkUserId";
 import { levelFromXp } from "@/lib/progression/xp";
 
 export type Spotlight = {
@@ -25,16 +26,20 @@ export async function computeSpotlights(): Promise<Spotlight[]> {
     sb
       .from("user_progress")
       .select("username, avatar_id, country_code, xp")
+      .like("user_id", CLERK_USER_ID_FILTER)
+      .gt("xp", 0)
       .order("xp", { ascending: false })
       .limit(1)
       .maybeSingle(),
     sb
       .from("user_xp_events")
       .select("user_id, xp_amount, category, created_at")
+      .like("user_id", CLERK_USER_ID_FILTER)
       .gte("created_at", sinceWeek.toISOString()),
     sb
       .from("user_xp_events")
       .select("user_id, xp_amount")
+      .like("user_id", CLERK_USER_ID_FILTER)
       .gte("created_at", sinceDay.toISOString()),
   ]);
 
@@ -112,6 +117,7 @@ export async function computeSpotlights(): Promise<Spotlight[]> {
   const { data: users } = await sb
     .from("user_progress")
     .select("user_id, username, avatar_id, country_code, xp")
+    .like("user_id", CLERK_USER_ID_FILTER)
     .in("user_id", userIds.length ? userIds : ["__none__"]);
 
   const userMap = new Map((users ?? []).map((u) => [u.user_id, u]));

@@ -45,10 +45,12 @@ export function LeaderboardIdentity({
   username,
   avatarId,
   countryCode,
+  countryName,
 }: {
   username: string;
   avatarId: string | null;
   countryCode: string;
+  countryName?: string;
 }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -58,6 +60,11 @@ export function LeaderboardIdentity({
           <CountryFlag code={countryCode} width={18} />
           {username}
         </p>
+        {countryName && (
+          <p className="truncate text-[10px] font-bold text-ink/45">
+            {countryName}
+          </p>
+        )}
       </div>
     </div>
   );

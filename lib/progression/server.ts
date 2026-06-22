@@ -1,9 +1,36 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { CLERK_USER_ID_FILTER } from "./clerkUserId";
 import { DEFAULT_COUNTRY } from "./countries";
+import { ensureUserProfile } from "./ensureProfile";
 import { generateDailyMissions } from "./missions";
-import { todayKey } from "./xp";
+import { levelFromXp, todayKey } from "./xp";
+import { applyWeeklyXp } from "./weekly";
 import type { RawState } from "./engine";
 import type { UserDiscovery } from "./types";
+
+export type ClerkProfileMeta = {
+  username?: string;
+  avatarId?: string;
+  onboardingComplete?: boolean;
+};
+
+/** Upsert Supabase profile from Clerk public metadata (real users only). */
+export async function syncProfileFromClerk(
+  userId: string,
+  meta: ClerkProfileMeta | undefined,
+): Promise<void> {
+  if (!meta?.onboardingComplete || !meta.username?.trim()) return;
+
+  const raw = await loadUserProgress(userId);
+  await persistProgress(
+    userId,
+    meta.username.trim().toLowerCase(),
+    meta.avatarId ?? null,
+    raw,
+    0,
+    "profile_sync",
+  );
+}
 
 export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscovery[]): RawState {
   const today = todayKey();
@@ -59,7 +86,7 @@ export async function loadUserProgress(userId: string): Promise<RawState> {
     discoveredAt: new Date(d.discovered_at).getTime(),
   }));
 
-  if (!row) return rowToRaw({ country_code: "US" }, []);
+  if (!row) return rowToRaw({ country_code: DEFAULT_COUNTRY }, []);
   return rowToRaw(row, mapped);
 }
 
@@ -75,6 +102,18 @@ export async function persistProgress(
   const sb = getSupabaseAdmin();
   if (!sb) return;
 
+  const { data: existing } = await sb
+    .from("user_progress")
+    .select("weekly_xp, week_started_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const weekly = applyWeeklyXp(
+    (existing?.weekly_xp as number) ?? 0,
+    (existing?.week_started_at as string) ?? null,
+    xpDelta,
+  );
+
   await sb.from("user_progress").upsert(
     {
       user_id: userId,
@@ -82,10 +121,15 @@ export async function persistProgress(
       avatar_id: avatarId,
       xp: raw.xp,
       coins: raw.coins,
+      level: levelFromXp(raw.xp),
+      weekly_xp: weekly.weeklyXp,
+      week_started_at: weekly.weekStartedAt,
       current_streak: raw.currentStreak,
       longest_streak: raw.longestStreak,
       last_play_date: raw.lastPlayDate,
       country_code: raw.countryCode,
+      achievements_count: raw.unlockedAchievements.length,
+      discoveries_count: raw.discoveries.length,
       mastery: raw.mastery,
       unlocked_achievements: raw.unlockedAchievements,
       unlocked_badges: raw.unlockedBadges,
@@ -114,6 +158,7 @@ export async function fetchUserRank(xp: number): Promise<number | undefined> {
   const { count } = await sb
     .from("user_progress")
     .select("*", { count: "exact", head: true })
+    .like("user_id", CLERK_USER_ID_FILTER)
     .gt("xp", xp);
   return (count ?? 0) + 1;
 }

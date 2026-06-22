@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { getAvatarById } from "@/lib/avatars";
 import AppIcon from "@/components/icons/AppIcon";
 import CountryFlag from "@/components/CountryFlag";
@@ -35,12 +36,13 @@ export default function PlayerSpotlights() {
         Top players
       </h2>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {spotlights.map((s) => {
+          {spotlights.map((s) => {
           const avatar = getAvatarById(s.avatarId);
           return (
-            <div
+            <Link
               key={s.id}
-              className="flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-white p-3 shadow-[0_3px_0_0_#0d0d0d]"
+              href={`/profile/${encodeURIComponent(s.username)}`}
+              className="flex items-center gap-3 rounded-2xl border-[3px] border-ink bg-white p-3 shadow-[0_3px_0_0_#0d0d0d] transition hover:bg-lime/10"
             >
               {avatar ? (
                 <Image
@@ -65,7 +67,7 @@ export default function PlayerSpotlights() {
                 </p>
                 <p className="truncate text-xs font-bold text-ink/50">{s.detail}</p>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

@@ -2,58 +2,49 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  getGlobalLocalLeaderboard,
-  type LocalLeaderboardEntry,
-} from "@/lib/gameProgress";
 import { useProgression } from "@/lib/progression/client";
+import {
+  LEADERBOARD_CATEGORIES,
+  LEADERBOARD_COUNTRIES,
+  type LeaderboardEntry,
+  type LeaderboardScope,
+} from "@/lib/progression/leaderboard";
 import { LeaderboardIdentity } from "@/components/platform/LeaderboardAvatar";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 
-type BoardEntry = {
-  rank: number;
-  username: string;
-  avatarId: string | null;
-  xp: number;
-  level: number;
-  countryCode: string;
-  title: string;
-};
-
-type Scope = "global" | "weekly" | "monthly" | "country" | "category";
-
-const CATEGORY_SCOPES = [
-  { slug: "geography", label: "Geography" },
-  { slug: "sports", label: "Sports" },
-  { slug: "entertainment", label: "Movies" },
-  { slug: "history", label: "History" },
-  { slug: "science", label: "Science" },
-] as const;
-
 export default function LeaderboardClient() {
   const { state } = useProgression();
-  const [scope, setScope] = useState<Scope>("global");
+  const [scope, setScope] = useState<LeaderboardScope>("global");
   const [category, setCategory] = useState<string>("geography");
-  const [remote, setRemote] = useState<BoardEntry[]>([]);
-  const [local, setLocal] = useState<LocalLeaderboardEntry[]>([]);
+  const [country, setCountry] = useState<string>(state.countryCode);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [source, setSource] = useState<"supabase" | "none" | "error">("none");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setCountry(state.countryCode);
+  }, [state.countryCode]);
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
-    setLocal(getGlobalLocalLeaderboard(25));
     const params = new URLSearchParams({ scope, limit: "25" });
-    if (scope === "country") params.set("country", state.countryCode);
+    if (scope === "country") params.set("country", country);
     if (scope === "category") params.set("category", category);
     try {
       const res = await fetch(`/api/progression/leaderboard?${params}`);
-      const data = (await res.json()) as { entries?: BoardEntry[] };
-      setRemote(data.entries ?? []);
+      const data = (await res.json()) as {
+        entries?: LeaderboardEntry[];
+        source?: "supabase" | "none" | "error";
+      };
+      setEntries(data.entries ?? []);
+      setSource(data.source ?? "none");
     } catch {
-      setRemote([]);
+      setEntries([]);
+      setSource("error");
     } finally {
       setLoading(false);
     }
-  }, [scope, state.countryCode, category]);
+  }, [scope, country, category]);
 
   useEffect(() => {
     void loadBoard();
@@ -69,6 +60,11 @@ export default function LeaderboardClient() {
         { event: "*", schema: "public", table: "user_progress" },
         () => void loadBoard(),
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "user_xp_events" },
+        () => void loadBoard(),
+      )
       .subscribe();
 
     return () => {
@@ -77,24 +73,11 @@ export default function LeaderboardClient() {
     };
   }, [loadBoard]);
 
-  const entries =
-    remote.length > 0
-      ? remote
-      : local.map((e, i) => ({
-          rank: i + 1,
-          username: e.username,
-          avatarId: null,
-          xp: e.score,
-          level: Math.floor(e.score / 500) + 1,
-          countryCode: state.countryCode,
-          title: "Explorer",
-        }));
-
-  const tabs: { id: Scope; label: string }[] = [
+  const tabs: { id: LeaderboardScope; label: string }[] = [
     { id: "global", label: "Global" },
     { id: "weekly", label: "This week" },
     { id: "monthly", label: "This month" },
-    { id: "country", label: "My country" },
+    { id: "country", label: "By country" },
     { id: "category", label: "By category" },
   ];
 
@@ -120,9 +103,31 @@ export default function LeaderboardClient() {
         ))}
       </div>
 
+      {scope === "country" && (
+        <div className="flex flex-wrap gap-1.5">
+          {LEADERBOARD_COUNTRIES.map((c) => (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                setCountry(c.code);
+              }}
+              className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${
+                country === c.code
+                  ? "border-ink bg-lime/40 text-ink"
+                  : "border-ink/15 text-ink/50"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {scope === "category" && (
         <div className="flex flex-wrap gap-1.5">
-          {CATEGORY_SCOPES.map((c) => (
+          {LEADERBOARD_CATEGORIES.map((c) => (
             <button
               key={c.slug}
               type="button"
@@ -142,6 +147,13 @@ export default function LeaderboardClient() {
         </div>
       )}
 
+      {source === "none" && !loading && (
+        <p className="rounded-xl border-2 border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+          Leaderboard database is not connected. Configure Supabase in your
+          environment to see live rankings.
+        </p>
+      )}
+
       {loading && (
         <div className="space-y-2 animate-pulse">
           {[1, 2, 3].map((i) => (
@@ -150,46 +162,58 @@ export default function LeaderboardClient() {
         </div>
       )}
 
-      {!loading && entries.length === 0 && (
+      {!loading && entries.length === 0 && source === "supabase" && (
         <div className="rounded-2xl border-4 border-dashed border-ink/20 p-10 text-center">
-          <p className="font-extrabold text-ink/60">No rankings yet!</p>
+          <p className="font-extrabold text-ink/60">No players ranked yet</p>
           <p className="mt-2 text-sm font-semibold text-ink/45">
-            Play quizzes to earn XP and climb the board.
+            Sign in, complete your profile, and play quizzes to earn XP. Real
+            players appear here automatically.
           </p>
-          <Link
-            href="/"
-            className="mt-4 inline-block rounded-full border-4 border-ink bg-grass px-5 py-2 font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d]"
-          >
-            Start exploring
-          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/signin"
+              className="inline-block rounded-full border-4 border-ink bg-grass px-5 py-2 font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d]"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/"
+              className="inline-block rounded-full border-4 border-ink bg-white px-5 py-2 font-extrabold text-ink shadow-[0_3px_0_0_#0d0d0d]"
+            >
+              Play a quiz
+            </Link>
+          </div>
         </div>
       )}
 
       {entries.length > 0 && (
         <ol className="flex flex-col gap-2">
           {entries.map((e) => (
-            <li
-              key={`${e.rank}-${e.username}`}
-              className={`flex items-center gap-3 rounded-2xl border-4 border-ink px-4 py-3 shadow-[0_3px_0_0_#0d0d0d] ${
-                e.rank <= 3 ? "bg-lime/30" : "bg-white"
-              }`}
-            >
-              <span className="w-8 font-display text-xl font-black text-ink/40">
-                #{e.rank}
-              </span>
-              <LeaderboardIdentity
-                username={e.username}
-                avatarId={e.avatarId}
-                countryCode={e.countryCode}
-              />
-              <div className="text-right">
-                <span className="block font-extrabold tabular-nums text-grass">
-                  {e.xp.toLocaleString()} XP
+            <li key={`${e.rank}-${e.username}`}>
+              <Link
+                href={`/profile/${encodeURIComponent(e.username)}`}
+                className={`flex items-center gap-3 rounded-2xl border-4 border-ink px-4 py-3 shadow-[0_3px_0_0_#0d0d0d] transition hover:bg-lime/10 ${
+                  e.rank <= 3 ? "bg-lime/30" : "bg-white"
+                }`}
+              >
+                <span className="w-8 font-display text-xl font-black text-ink/40">
+                  #{e.rank}
                 </span>
-                <span className="text-[10px] font-bold text-ink/40">
-                  Lv.{e.level}
-                </span>
-              </div>
+                <LeaderboardIdentity
+                  username={e.username}
+                  avatarId={e.avatarId}
+                  countryCode={e.countryCode}
+                  countryName={e.countryName}
+                />
+                <div className="text-right">
+                  <span className="block font-extrabold tabular-nums text-grass">
+                    {e.xp.toLocaleString()} XP
+                  </span>
+                  <span className="text-[10px] font-bold text-ink/40">
+                    Lv.{e.level}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ol>

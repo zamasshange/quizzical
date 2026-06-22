@@ -1,10 +1,12 @@
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { buildAuthEmail } from "@/lib/emails/brandedAuthEmail";
 import { sendAuthEmail } from "@/lib/emails/sendAuthEmail";
+import { ensureUserProfile } from "@/lib/progression/ensureProfile";
+import { DEFAULT_COUNTRY } from "@/lib/progression/countries";
 
 export const runtime = "nodejs";
 
-/** Clerk auth emails — branded HTML via Resend (Hobby plan workaround). */
+/** Clerk webhooks — branded auth emails + Supabase profile sync. */
 export async function POST(req: Request) {
   let event;
   try {
@@ -12,6 +14,24 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("[clerk-webhook] verification failed:", err);
     return new Response("Invalid signature", { status: 400 });
+  }
+
+  if (event.type === "user.created") {
+    const user = event.data;
+    const userId = user.id;
+    const username =
+      user.username?.trim().toLowerCase() ??
+      user.first_name?.trim().toLowerCase() ??
+      `player_${userId.slice(-6)}`;
+
+    try {
+      await ensureUserProfile(userId, username, null, DEFAULT_COUNTRY);
+    } catch (err) {
+      console.error("[clerk-webhook] profile sync failed:", err);
+      return new Response("Profile sync failed", { status: 500 });
+    }
+
+    return new Response("Profile created", { status: 200 });
   }
 
   if (event.type !== "email.created") {
