@@ -66,6 +66,8 @@ export type GameMode = {
   color: string;
   defaultQuestion: string;
   subtitle?: string;
+  /** Wikipedia/TMDB search terms for homepage preview photos. */
+  previewTerms: string[];
 };
 
 export const IMAGE_GAME_MODES: GameMode[] = [
@@ -78,6 +80,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#b15bff",
     defaultQuestion: "Who is this?",
     subtitle: "Hollywood, music & pop culture icons",
+    previewTerms: ["Zendaya", "Leonardo DiCaprio", "Denzel Washington"],
   },
   {
     slug: "football",
@@ -88,6 +91,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#00a76d",
     defaultQuestion: "Who is this footballer?",
     subtitle: "Soccer stars worldwide",
+    previewTerms: ["Lionel Messi", "Cristiano Ronaldo"],
   },
   {
     slug: "basketball",
@@ -98,6 +102,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#ff6b35",
     defaultQuestion: "Who is this player?",
     subtitle: "NBA & world basketball",
+    previewTerms: ["LeBron James", "Stephen Curry"],
   },
   {
     slug: "cricket",
@@ -108,6 +113,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#2ecc71",
     defaultQuestion: "Who is this cricketer?",
     subtitle: "International cricket legends",
+    previewTerms: ["Virat Kohli", "MS Dhoni"],
   },
   {
     slug: "athlete",
@@ -118,6 +124,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#ff9f43",
     defaultQuestion: "Who is this athlete?",
     subtitle: "Tennis, F1, swimming & more",
+    previewTerms: ["Simone Biles", "Usain Bolt"],
   },
   {
     slug: "movie",
@@ -128,6 +135,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#4d8dff",
     defaultQuestion: "Which movie is this?",
     subtitle: "Posters, stills & iconic scenes",
+    previewTerms: ["The Dark Knight", "Black Panther", "Inception"],
   },
   {
     slug: "music",
@@ -138,6 +146,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     color: "#ff6b6b",
     defaultQuestion: "Who is this artist?",
     subtitle: "Pop, hip-hop, rock & global stars",
+    previewTerms: ["Beyoncé", "Taylor Swift", "Drake"],
   },
 ];
 

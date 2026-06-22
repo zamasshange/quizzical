@@ -47,13 +47,55 @@ const items: Item[] = [
   })),
 ];
 
-export default function CategoryNav() {
+type Props = {
+  /** `strip` = top nav row; `grid` = compact tile grid for secondary placement */
+  layout?: "strip" | "grid";
+  /** Omit the home/start item (e.g. when already on the homepage). */
+  hideStart?: boolean;
+};
+
+export default function CategoryNav({ layout = "strip", hideStart = false }: Props) {
   const pathname = usePathname();
+  const navItems = hideStart ? items.filter((item) => item.href !== "/") : items;
+
+  if (layout === "grid") {
+    return (
+      <nav className="w-full" aria-label="Quiz categories">
+        <ul className="grid grid-cols-4 gap-2">
+          {navItems.map(({ label, href, Icon, count }) => {
+            const active = href === "/" ? pathname === "/" : pathname === href;
+            return (
+              <li key={href}>
+                <Link
+                  href={href}
+                  className={`group flex flex-col items-center gap-1 rounded-xl border-2 px-1 py-2 text-center transition-colors ${
+                    active
+                      ? "border-ink bg-ink/5"
+                      : "border-ink/10 bg-white hover:border-ink/30"
+                  }`}
+                >
+                  <Icon className="h-5 w-5 text-ink" />
+                  <span className="line-clamp-2 text-[10px] font-bold leading-tight text-ink">
+                    {label}
+                  </span>
+                  {count !== undefined && (
+                    <span className="text-[9px] font-extrabold tabular-nums text-ink/40">
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    );
+  }
 
   return (
     <nav className="w-full" aria-label="Quiz categories">
       <ul className="-mx-4 flex snap-x snap-mandatory flex-row items-stretch gap-0.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:justify-between md:gap-2 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
-        {items.map(({ label, href, Icon, count }) => {
+        {navItems.map(({ label, href, Icon, count }) => {
           const active = href === "/" ? pathname === "/" : pathname === href;
           return (
             <li key={href} className="shrink-0 snap-start md:min-w-[4.5rem] md:flex-1">

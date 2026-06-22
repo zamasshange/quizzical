@@ -174,6 +174,23 @@ export function getRecentCompleted(limit = 8): GameHistoryEntry[] {
     .slice(0, limit);
 }
 
+/** One entry per game — latest play only — so the home hub does not grow with replays. */
+export function getRecentCompletedUnique(limit = 8): GameHistoryEntry[] {
+  const seen = new Set<string>();
+  const result: GameHistoryEntry[] = [];
+
+  for (const entry of getGameHistory()
+    .filter((h) => !h.inProgress)
+    .sort((a, b) => b.completedAt - a.completedAt)) {
+    if (seen.has(entry.gameKey)) continue;
+    seen.add(entry.gameKey);
+    result.push(entry);
+    if (result.length >= limit) break;
+  }
+
+  return result;
+}
+
 export function addLocalLeaderboardScore(
   entry: LocalLeaderboardEntry,
 ): void {

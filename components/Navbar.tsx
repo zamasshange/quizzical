@@ -4,6 +4,7 @@ import { SparkleIcon } from "./icons";
 import NavActions from "./NavActions";
 import NavbarAuth from "./NavbarAuth";
 import NavbarLinks from "./NavbarLinks";
+import HomeCategoryShortcut from "./HomeCategoryShortcut";
 
 export default function Navbar() {
   return (

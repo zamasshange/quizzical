@@ -24,8 +24,8 @@ export default function Home() {
       <div className="pointer-events-none absolute inset-0 top-0 z-0 bg-quiz-pattern opacity-[0.05]" />
 
       <main className="custom-container relative z-10 flex-1 px-4 pb-4 sm:px-6 md:px-8 lg:px-12">
-        {/* Category navigation */}
-        <div className="py-2 md:py-6">
+        {/* Category strip — desktop only; mobile users see games first */}
+        <div className="hidden py-6 md:block">
           <CategoryNav />
         </div>
 
@@ -40,10 +40,16 @@ export default function Home() {
 
         <ExplorerHub />
 
-        {/* Curated quiz rows — full category lists live on /[category] via nav above */}
+        {/* Curated quiz rows */}
         {homeRows.map((row) => (
           <QuizRow key={row.title} title={row.title} quizzes={row.quizzes} />
         ))}
+
+        {/* Mobile category browse — after content so the fold shows what we offer */}
+        <section id="browse-categories" className="mt-8 scroll-mt-24 md:hidden">
+          <h2 className="mb-3 text-lg font-black text-ink">Browse by category</h2>
+          <CategoryNav layout="grid" hideStart />
+        </section>
       </main>
 
       <Footer />
