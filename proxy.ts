@@ -17,31 +17,40 @@ function normalizeTopicSlug(raw: string): string {
     .replace(/^-|-$/g, "");
 }
 
-/** Normalize legacy Google URLs; send unknown topics to the homepage. */
+/** Legacy Google URLs used capital /Topics — must be case-sensitive (config redirects loop). */
+function legacyTopicsCaseRedirect(req: Request): NextResponse | null {
+  const url = new URL(req.url);
+  if (!url.pathname.startsWith("/Topics")) return null;
+  url.pathname = url.pathname.replace(/^\/Topics/, "/topics");
+  return NextResponse.redirect(url, 301);
+}
+
+/** Normalize messy slugs; send unknown topics to the homepage. */
 function topicRedirect(req: Request): NextResponse | null {
-  const { pathname } = new URL(req.url);
+  const url = new URL(req.url);
   const prefix = "/topics/";
-  if (!pathname.startsWith(prefix) || pathname.length <= prefix.length) {
+  if (!url.pathname.startsWith(prefix) || url.pathname.length <= prefix.length) {
     return null;
   }
 
   const rawSlug = decodeURIComponent(
-    pathname.slice(prefix.length).split("/")[0] ?? "",
+    url.pathname.slice(prefix.length).split("/")[0] ?? "",
   );
   const normalized = normalizeTopicSlug(rawSlug);
 
   if (!normalized) {
-    return NextResponse.redirect(new URL("/", req.url), 302);
+    url.pathname = "/";
+    return NextResponse.redirect(url, 302);
   }
 
   if (normalized !== rawSlug) {
-    const url = new URL(req.url);
     url.pathname = `${prefix}${normalized}`;
     return NextResponse.redirect(url, 301);
   }
 
   if (!isValidTopicSlug(normalized)) {
-    return NextResponse.redirect(new URL("/", req.url), 302);
+    url.pathname = "/";
+    return NextResponse.redirect(url, 302);
   }
 
   return null;
@@ -89,6 +98,9 @@ const isOnboardingBypass = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  const legacyTopics = legacyTopicsCaseRedirect(req);
+  if (legacyTopics) return legacyTopics;
+
   const topicRouteRedirect = topicRedirect(req);
   if (topicRouteRedirect) return topicRouteRedirect;
 
