@@ -1,12 +1,21 @@
-/** Generative ambient music — soft category-aware pads via Web Audio. */
+/** Ambient background music — soft chord arpeggios (no continuous drone/buzz). */
 
 import { getCategoryTheme, HOME_THEME, type CategoryTheme } from "./categoryThemes";
 import { isMuted } from "@/lib/sound";
 
+/** Soft chord arpeggios (C → Am → F → G). */
+const CHORDS = [
+  [261.63, 329.63, 392.0],
+  [220.0, 261.63, 329.63],
+  [174.61, 220.0, 261.63],
+  [196.0, 246.94, 293.66],
+] as const;
+
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
-let oscillators: OscillatorNode[] = [];
-let lfo: OscillatorNode | null = null;
+let seqTimer: ReturnType<typeof setInterval> | null = null;
+let noteIndex = 0;
+let chordIndex = 0;
 let activeTheme: string | null = null;
 let fadeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -30,59 +39,13 @@ function getCtx(): AudioContext | null {
   }
 }
 
-function stopNodes() {
-  for (const o of oscillators) {
-    try {
-      o.stop();
-      o.disconnect();
-    } catch {
-      /* already stopped */
-    }
+function stopSequencer() {
+  if (seqTimer) {
+    clearInterval(seqTimer);
+    seqTimer = null;
   }
-  oscillators = [];
-  if (lfo) {
-    try {
-      lfo.stop();
-      lfo.disconnect();
-    } catch {
-      /* noop */
-    }
-    lfo = null;
-  }
-}
-
-function buildPad(theme: CategoryTheme) {
-  const ac = getCtx();
-  if (!ac || !masterGain || isMuted()) return;
-
-  stopNodes();
-
-  const freqs = [
-    theme.ambientFreq,
-    theme.ambientFreq * 1.5,
-    theme.ambientFreq * 2,
-  ];
-
-  for (const freq of freqs) {
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.value = theme.ambientMod * 0.08;
-    osc.connect(gain);
-    gain.connect(masterGain);
-    osc.start();
-    oscillators.push(osc);
-  }
-
-  lfo = ac.createOscillator();
-  const lfoGain = ac.createGain();
-  lfo.type = "sine";
-  lfo.frequency.value = 0.08;
-  lfoGain.gain.value = theme.ambientMod * 0.04;
-  lfo.connect(lfoGain);
-  lfoGain.connect(masterGain.gain);
-  lfo.start();
+  noteIndex = 0;
+  chordIndex = 0;
 }
 
 function fadeTo(target: number, ms = 1200) {
@@ -94,32 +57,80 @@ function fadeTo(target: number, ms = 1200) {
   masterGain.gain.linearRampToValueAtTime(target, now + ms / 1000);
 }
 
+function playArpNote(freq: number, mod: number) {
+  const ac = getCtx();
+  if (!ac || !masterGain || isMuted()) return;
+
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  const filter = ac.createBiquadFilter();
+
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  filter.type = "lowpass";
+  filter.frequency.value = 1600;
+  filter.Q.value = 0.4;
+
+  const t = ac.currentTime;
+  const peak = 0.035 * mod;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(peak, t + 0.25);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+  osc.start(t);
+  osc.stop(t + 2.3);
+}
+
+function startSequencer(theme: CategoryTheme) {
+  stopSequencer();
+
+  const tick = () => {
+    if (isMuted()) return;
+    const chord = CHORDS[chordIndex % CHORDS.length];
+    playArpNote(chord[noteIndex % 3], theme.ambientMod);
+    noteIndex++;
+    if (noteIndex % 3 === 0) chordIndex++;
+  };
+
+  tick();
+  seqTimer = setInterval(tick, 1400);
+  fadeTo(0.5, 1800);
+}
+
+function themeForSlug(slug: string): CategoryTheme {
+  if (slug === "home" || slug === "__quiz__") return HOME_THEME;
+  return getCategoryTheme(slug);
+}
+
 export function startAmbientMusic(categorySlug?: string): void {
   if (isMuted()) return;
-  const theme = categorySlug ? getCategoryTheme(categorySlug) : HOME_THEME;
-  const key = theme.slug;
-  if (activeTheme === key && oscillators.length > 0) return;
+
+  const isQuiz = categorySlug === "__quiz__";
+  const theme = themeForSlug(isQuiz ? "__quiz__" : categorySlug ?? "home");
+  const key = isQuiz ? "__quiz__" : theme.slug;
+  if (activeTheme === key && seqTimer) return;
 
   activeTheme = key;
   if (fadeTimer) clearTimeout(fadeTimer);
-
-  buildPad(theme);
-  fadeTo(0.22, 1500);
+  startSequencer(theme);
 }
 
 export function stopAmbientMusic(): void {
   activeTheme = null;
   fadeTo(0, 800);
   fadeTimer = setTimeout(() => {
-    stopNodes();
+    stopSequencer();
     fadeTimer = null;
   }, 900);
 }
 
 export function duckAmbientMusic(): void {
-  fadeTo(0.06, 400);
+  fadeTo(0.18, 400);
 }
 
 export function restoreAmbientMusic(): void {
-  if (activeTheme && !isMuted()) fadeTo(0.22, 600);
+  if (activeTheme && !isMuted()) fadeTo(0.5, 600);
 }

@@ -8,6 +8,7 @@ import { topicMetadata } from "@/lib/seo";
 import {
   getAllSeoTopics,
   getSeoTopicBySlug,
+  keywordToSlug,
   TOPIC_BRAND_LINE,
 } from "@/lib/seoTopics";
 import { categories, quizzes } from "@/lib/quizzes";
@@ -17,6 +18,8 @@ import { breadcrumbJsonLd } from "@/lib/seoStructuredData";
 export function generateStaticParams() {
   return getAllSeoTopics().map((t) => ({ slug: t.slug }));
 }
+
+export const dynamicParams = true;
 
 export async function generateMetadata(
   props: PageProps<"/topics/[slug]">,
@@ -88,13 +91,7 @@ export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
             <h2 className="text-lg font-black text-ink">Related topics</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {topic.related.map((rel) => {
-                const relTopic = getSeoTopicBySlug(
-                  rel
-                    .toLowerCase()
-                    .replace(/&/g, "and")
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-|-$/g, ""),
-                );
+                const relTopic = getSeoTopicBySlug(keywordToSlug(rel));
                 if (!relTopic) return null;
                 return (
                   <Link

@@ -5,6 +5,7 @@ import {
   IMAGE_GAME_KEYWORDS,
   PAGE_KEYWORDS,
   QUIZ_LONGTAIL_KEYWORDS,
+  SEARCH_TOPIC_KEYWORDS,
 } from "./seoKeywords";
 
 export type SeoTopic = {
@@ -13,13 +14,43 @@ export type SeoTopic = {
   related: string[];
 };
 
-function keywordToSlug(keyword: string): string {
+/** Google / legacy URLs that should resolve to a canonical topic slug. */
+const SLUG_ALIASES: Record<string, string> = {
+  "music-quiz-online": "music-quiz",
+  "football-quiz-online": "football-quiz",
+  "soccer-quiz-online": "soccer-quiz",
+  "movie-quiz-online": "movie-quiz",
+  "celebrity-quiz-online": "celebrity-quiz",
+  "geography-quiz-online": "geography-quiz",
+  "history-quiz-online": "history-quiz",
+  "science-quiz-online": "science-quiz",
+  "sports-quiz-online": "sports-trivia",
+  "trivia-quiz-online": "trivia-games",
+  "free-quiz-games": "free-quiz-games",
+  "online-quiz-games": "online-quiz-games",
+  "pub-quiz-online": "pub-quiz-online",
+  "box-office-quiz": "movie-quiz",
+  "premier-league-quiz": "football-quiz",
+  "picture-quiz-online": "picture-quiz",
+  "flag-quiz-online": "flag-quiz",
+};
+
+export function keywordToSlug(keyword: string): string {
   return keyword
     .toLowerCase()
     .trim()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function slugToKeyword(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function collectAllKeywords(): string[] {
@@ -31,6 +62,7 @@ function collectAllKeywords(): string[] {
         ...Object.values(CATEGORY_KEYWORDS).flat(),
         ...Object.values(IMAGE_GAME_KEYWORDS).flat(),
         ...QUIZ_LONGTAIL_KEYWORDS,
+        ...SEARCH_TOPIC_KEYWORDS,
       ]
         .map((k) => k.trim())
         .filter(Boolean),
@@ -85,8 +117,31 @@ export function getAllSeoTopics(): SeoTopic[] {
   return cachedTopics;
 }
 
+function buildDynamicTopic(slug: string): SeoTopic | undefined {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return undefined;
+  const keyword = slugToKeyword(slug);
+  if (keyword.length < 3) return undefined;
+  const keywords = collectAllKeywords();
+  return {
+    slug,
+    keyword,
+    related: relatedKeywords(keyword, keywords),
+  };
+}
+
+/** Resolve a topic by slug — exact match, alias, or dynamic from the URL. */
 export function getSeoTopicBySlug(slug: string): SeoTopic | undefined {
-  return getAllSeoTopics().find((t) => t.slug === slug);
+  const normalized = slug.toLowerCase().trim();
+  const exact = getAllSeoTopics().find((t) => t.slug === normalized);
+  if (exact) return exact;
+
+  const alias = SLUG_ALIASES[normalized];
+  if (alias) {
+    const target = getAllSeoTopics().find((t) => t.slug === alias);
+    if (target) return target;
+  }
+
+  return buildDynamicTopic(normalized);
 }
 
 /** Brand names always surfaced on topic pages. */

@@ -5,6 +5,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  duckAmbientMusic,
+  restoreAmbientMusic,
+} from "@/lib/atmosphere/ambientMusic";
 
 const MUTE_KEY = "quizzical-muted";
 
@@ -104,8 +108,8 @@ function fallbackBeep(key: SoundKey): void {
       tone(ac, 783.99, 0.2, 0.26, "triangle");
       break;
     case "wrong":
-      tone(ac, 196.0, 0, 0.2, "sawtooth", 0.12);
-      tone(ac, 146.83, 0.12, 0.3, "sawtooth", 0.12);
+      tone(ac, 196.0, 0, 0.2, "triangle", 0.1);
+      tone(ac, 174.61, 0.14, 0.28, "triangle", 0.08);
       break;
     case "quizComplete":
       tone(ac, 392.0, 0, 0.18, "triangle", 0.14);
@@ -147,9 +151,9 @@ function fallbackBeep(key: SoundKey): void {
       tone(ac, 659.25, 0.2, 0.24, "triangle", 0.16);
       break;
     case "streak":
-      tone(ac, 329.63, 0, 0.1, "sawtooth", 0.1);
-      tone(ac, 392, 0.08, 0.12, "sawtooth", 0.12);
-      tone(ac, 493.88, 0.16, 0.14, "sawtooth", 0.14);
+      tone(ac, 329.63, 0, 0.1, "triangle", 0.1);
+      tone(ac, 392, 0.08, 0.12, "triangle", 0.12);
+      tone(ac, 493.88, 0.16, 0.14, "triangle", 0.14);
       tone(ac, 587.33, 0.26, 0.28, "triangle", 0.16);
       break;
   }
@@ -181,9 +185,12 @@ export function preloadSounds(): void {
 function playSound(key: SoundKey): void {
   if (isMuted()) return;
 
+  duckAmbientMusic();
+
   const audio = getAudio(key);
   if (!audio || loadFailed.has(key)) {
     fallbackBeep(key);
+    setTimeout(() => restoreAmbientMusic(), 400);
     return;
   }
 
@@ -192,7 +199,10 @@ function playSound(key: SoundKey): void {
   void audio.play().catch(() => {
     loadFailed.add(key);
     fallbackBeep(key);
+    setTimeout(() => restoreAmbientMusic(), 400);
   });
+
+  audio.onended = () => restoreAmbientMusic();
 }
 
 export function playClick(): void {

@@ -36,9 +36,10 @@ export default function AmbientMusicLayer() {
     const override = atmosphere?.categorySlug;
     const fromPath = categoryFromPath(pathname);
     const category = override ?? fromPath;
+    const quizPlay = isQuizPlay(pathname);
 
-    if (pathname === "/" || category || isQuizPlay(pathname)) {
-      startAmbientMusic(category);
+    if (pathname === "/" || category || quizPlay) {
+      startAmbientMusic(quizPlay ? "__quiz__" : category);
       return () => stopAmbientMusic();
     }
 
@@ -51,8 +52,9 @@ export default function AmbientMusicLayer() {
       else {
         const category =
           atmosphere?.categorySlug ?? categoryFromPath(pathname);
-        if (pathname === "/" || category || isQuizPlay(pathname)) {
-          startAmbientMusic(category);
+        const quizPlay = isQuizPlay(pathname);
+        if (pathname === "/" || category || quizPlay) {
+          startAmbientMusic(quizPlay ? "__quiz__" : category);
         }
       }
     };
