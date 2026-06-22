@@ -52,15 +52,6 @@ export function keywordToSlug(keyword: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function slugToKeyword(slug: string): string {
-  return slug
-    .split("-")
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function collectAllKeywords(): string[] {
   return [
     ...new Set(
@@ -125,19 +116,7 @@ export function getAllSeoTopics(): SeoTopic[] {
   return cachedTopics;
 }
 
-function buildDynamicTopic(slug: string): SeoTopic | undefined {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return undefined;
-  const keyword = slugToKeyword(slug);
-  if (keyword.length < 3) return undefined;
-  const keywords = collectAllKeywords();
-  return {
-    slug,
-    keyword,
-    related: relatedKeywords(keyword, keywords),
-  };
-}
-
-/** Resolve a topic by slug — exact match, alias, or dynamic from the URL. */
+/** Resolve a topic by slug — exact match or alias only (no invented pages). */
 export function getSeoTopicBySlug(slug: string): SeoTopic | undefined {
   const normalized = slug.toLowerCase().trim();
   const exact = getAllSeoTopics().find((t) => t.slug === normalized);
@@ -149,7 +128,11 @@ export function getSeoTopicBySlug(slug: string): SeoTopic | undefined {
     if (target) return target;
   }
 
-  return buildDynamicTopic(normalized);
+  return undefined;
+}
+
+export function isValidTopicSlug(slug: string): boolean {
+  return getSeoTopicBySlug(slug) !== undefined;
 }
 
 /** Short label for topic hub pages — not stuffed into every meta description. */

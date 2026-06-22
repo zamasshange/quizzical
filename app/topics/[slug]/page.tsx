@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import JsonLd from "@/components/JsonLd";
@@ -58,7 +58,7 @@ export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
   const { slug: rawSlug } = await props.params;
   const slug = rawSlug.toLowerCase().trim();
   const topic = getSeoTopicBySlug(slug);
-  if (!topic) notFound();
+  if (!topic) redirect("/");
 
   if (topic.slug !== slug) {
     redirect(`/topics/${topic.slug}`);

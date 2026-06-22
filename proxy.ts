@@ -1,13 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { CATEGORY_PATHS } from "@/lib/categorySlugs";
+import { isValidTopicSlug } from "@/lib/seoTopics";
 import {
   AVATAR_COOKIE_NAME,
   ONBOARDING_COOKIE_NAME,
   hasCompletedOnboarding,
 } from "@/lib/userMetadata";
-
-const CANONICAL_HOST = "quizzical.site";
 
 function normalizeTopicSlug(raw: string): string {
   return raw
@@ -18,30 +17,34 @@ function normalizeTopicSlug(raw: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function canonicalHostRedirect(req: Request): NextResponse | null {
-  const host = (req.headers.get("host") ?? "").toLowerCase();
-  if (host === `www.${CANONICAL_HOST}`) {
-    const url = new URL(req.url);
-    url.hostname = CANONICAL_HOST;
-    return NextResponse.redirect(url, 308);
-  }
-  return null;
-}
-
-function topicSlugRedirect(req: Request): NextResponse | null {
+/** Normalize legacy Google URLs; send unknown topics to the homepage. */
+function topicRedirect(req: Request): NextResponse | null {
   const { pathname } = new URL(req.url);
   const prefix = "/topics/";
   if (!pathname.startsWith(prefix) || pathname.length <= prefix.length) {
     return null;
   }
 
-  const rawSlug = decodeURIComponent(pathname.slice(prefix.length).split("/")[0] ?? "");
+  const rawSlug = decodeURIComponent(
+    pathname.slice(prefix.length).split("/")[0] ?? "",
+  );
   const normalized = normalizeTopicSlug(rawSlug);
-  if (!normalized || normalized === rawSlug) return null;
 
-  const url = new URL(req.url);
-  url.pathname = `${prefix}${normalized}`;
-  return NextResponse.redirect(url, 301);
+  if (!normalized) {
+    return NextResponse.redirect(new URL("/", req.url), 302);
+  }
+
+  if (normalized !== rawSlug) {
+    const url = new URL(req.url);
+    url.pathname = `${prefix}${normalized}`;
+    return NextResponse.redirect(url, 301);
+  }
+
+  if (!isValidTopicSlug(normalized)) {
+    return NextResponse.redirect(new URL("/", req.url), 302);
+  }
+
+  return null;
 }
 
 // Protect admin dashboard and API routes. Unauthenticated users go to /signin.
@@ -86,11 +89,8 @@ const isOnboardingBypass = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const hostRedirect = canonicalHostRedirect(req);
-  if (hostRedirect) return hostRedirect;
-
-  const slugRedirect = topicSlugRedirect(req);
-  if (slugRedirect) return slugRedirect;
+  const topicRouteRedirect = topicRedirect(req);
+  if (topicRouteRedirect) return topicRouteRedirect;
 
   if (isProtectedRoute(req)) {
     await auth.protect({ unauthenticatedUrl: "/signin" });
