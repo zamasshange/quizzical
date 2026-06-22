@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:clerk-emails": "node scripts/sync-clerk-email-templates.mjs",
+    "clerk:emails:handoff": "node scripts/toggle-clerk-email-delivery.mjs",
+    "clerk:emails:clerk": "node scripts/toggle-clerk-email-delivery.mjs --clerk"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.7",

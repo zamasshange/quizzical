@@ -31,6 +31,10 @@ Add `quizzical.site` and your `*.vercel.app` domain in the [Clerk dashboard](htt
 
 New users are redirected to `/onboarding` after sign-up to pick a cartoon avatar before using the app.
 
+**Branded verification emails (Hobby / free plan)**
+
+Clerk’s free plan uses plain default emails. Quizzical ships custom HTML (logo, purple/gold branding) via a webhook + Resend. See [`emails/clerk/README.md`](emails/clerk/README.md) for production setup.
+
 **Optional**
 
 - `NEXT_PUBLIC_SITE_URL` — canonical URL for SEO (default: `https://quizzical.site`)

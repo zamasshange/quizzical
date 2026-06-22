@@ -32,21 +32,21 @@ export default function Home() {
 
         <DynamicHomeHero />
 
-        {/* Picture guessing games — rich bento grid in PictureGameGrid */}
+        {/* Picture guessing games — grouped grid with full photo previews */}
         <section id="picture-games" className="mt-3 scroll-mt-20 md:mt-7">
           <PictureGameGrid modes={IMAGE_GAME_MODES} variant="home" />
         </section>
 
         <HomeGameHub />
 
-        <PlatformHub />
-
-        <ExplorerHub />
-
-        {/* Curated quiz rows */}
+        {/* Curated quiz rows — main trivia catalogue */}
         {homeRows.map((row) => (
           <QuizRow key={row.title} title={row.title} quizzes={row.quizzes} />
         ))}
+
+        <ExplorerHub />
+
+        <PlatformHub />
 
         {/* Mobile category browse — after content so the fold shows what we offer */}
         <section id="browse-categories" className="mt-8 scroll-mt-24 md:hidden">

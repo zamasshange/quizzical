@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { getAvatarById } from "@/lib/avatars";
+import AppIcon from "@/components/icons/AppIcon";
 import CountryFlag from "@/components/CountryFlag";
 
 type Spotlight = {
@@ -29,8 +30,9 @@ export default function PlayerSpotlights() {
 
   return (
     <section className="mt-5 md:mt-7">
-      <h2 className="mb-3 text-lg font-black text-ink md:text-xl">
-        🏆 Top players
+      <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-ink md:text-xl">
+        <AppIcon name="trophy" size={22} className="text-grass" />
+        Top players
       </h2>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {spotlights.map((s) => {

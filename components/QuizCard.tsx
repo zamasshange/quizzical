@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { getCategory, type Quiz, type Badge } from "@/lib/quizzes";
 import { getQuizProfile, getRevealCategory } from "@/lib/quizProfiles";
 import { quizImageFallbacks } from "@/lib/quizImageUrl";
+import ContainedPhoto from "@/components/media/ContainedPhoto";
 import { prefetchReveal } from "@/lib/revealPrefetch";
 import { cardHover, defaultTransition, fadeUp } from "@/lib/motion";
 
@@ -126,23 +127,14 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
         >
           {activeSrc ? (
             <>
-              {showEmoji && (
-                <span className="absolute text-6xl drop-shadow-sm md:text-7xl">
-                  {quiz.emoji}
-                </span>
-              )}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ContainedPhoto
                 src={activeSrc}
                 alt=""
-                loading="lazy"
-                decoding="async"
-                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full"
                 onLoad={() => setShowEmoji(false)}
                 onError={handleThumbError}
-                className="absolute inset-0 h-full w-full object-cover opacity-90 transition-opacity duration-300 group-hover:opacity-100"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/50 via-ink/10 to-transparent" />
+              <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-ink/40 via-transparent to-transparent" />
             </>
           ) : (
             <span className="text-6xl drop-shadow-sm md:text-7xl">{quiz.emoji}</span>
