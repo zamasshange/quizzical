@@ -41,7 +41,7 @@ export function getAvatarId(
   return getAvatarIdFromCookie(cookieValue) ?? getAvatarIdFromClaims(sessionClaims);
 }
 
-function getPublicMetadata(
+export function getPublicMetadata(
   sessionClaims: Record<string, unknown> | null | undefined,
 ): UserPublicMetadata | undefined {
   if (!sessionClaims) return undefined;

@@ -1,17 +1,28 @@
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { applyProgressionEvent, toProgressionState } from "@/lib/progression/engine";
 import type {
   ProgressionEventPayload,
   ProgressionEventResult,
 } from "@/lib/progression/types";
-import { loadUserProgress, persistProgress, fetchUserRank } from "@/lib/progression/server";
+import {
+  loadUserProgress,
+  persistProgress,
+  fetchUserRank,
+  syncProfileFromClerk,
+} from "@/lib/progression/server";
+import { resolveClerkIdentity } from "@/lib/progression/resolveClerkIdentity";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
   activityFromProgression,
   emitActivityEvent,
 } from "@/lib/platform/activity";
 import { recordContentPlays } from "@/lib/platform/contentHistoryServer";
+import {
+  AVATAR_COOKIE_NAME,
+  ONBOARDING_COOKIE_NAME,
+} from "@/lib/userMetadata";
 
 /** POST /api/progression/event — record gameplay progression */
 export async function POST(req: Request) {
@@ -27,15 +38,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid body." }, { status: 400 });
   }
 
+  const jar = await cookies();
+  const cookieOpts = {
+    avatar: jar.get(AVATAR_COOKIE_NAME)?.value,
+    onboarded: jar.get(ONBOARDING_COOKIE_NAME)?.value,
+  };
+
+  await syncProfileFromClerk(userId, sessionClaims, cookieOpts);
+
   const raw = await loadUserProgress(userId);
   const result = applyProgressionEvent(raw, payload, { persistLocal: false });
 
-  const meta = sessionClaims?.publicMetadata as
-    | { username?: string; avatarId?: string }
-    | undefined;
-
-  const username = meta?.username ?? "Player";
-  const avatarId = meta?.avatarId ?? null;
+  const identity = await resolveClerkIdentity(userId, sessionClaims, cookieOpts);
+  const username = identity?.username ?? "Player";
+  const avatarId = identity?.avatarId ?? null;
 
   await persistProgress(
     userId,

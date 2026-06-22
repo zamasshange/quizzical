@@ -1,31 +1,27 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { CLERK_USER_ID_FILTER } from "./clerkUserId";
 import { DEFAULT_COUNTRY } from "./countries";
-import { ensureUserProfile } from "./ensureProfile";
 import { generateDailyMissions } from "./missions";
+import { resolveClerkIdentity } from "./resolveClerkIdentity";
 import { levelFromXp, todayKey } from "./xp";
 import { applyWeeklyXp } from "./weekly";
 import type { RawState } from "./engine";
 import type { UserDiscovery } from "./types";
 
-export type ClerkProfileMeta = {
-  username?: string;
-  avatarId?: string;
-  onboardingComplete?: boolean;
-};
-
-/** Upsert Supabase profile from Clerk public metadata (real users only). */
+/** Upsert Supabase profile from Clerk (real signed-in users). */
 export async function syncProfileFromClerk(
   userId: string,
-  meta: ClerkProfileMeta | undefined,
+  sessionClaims: Record<string, unknown> | null | undefined,
+  cookies?: { avatar?: string; onboarded?: string },
 ): Promise<void> {
-  if (!meta?.onboardingComplete || !meta.username?.trim()) return;
+  const identity = await resolveClerkIdentity(userId, sessionClaims, cookies);
+  if (!identity) return;
 
   const raw = await loadUserProgress(userId);
   await persistProgress(
     userId,
-    meta.username.trim().toLowerCase(),
-    meta.avatarId ?? null,
+    identity.username,
+    identity.avatarId,
     raw,
     0,
     "profile_sync",

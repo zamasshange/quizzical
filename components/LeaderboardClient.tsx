@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { useProgression } from "@/lib/progression/client";
 import {
   LEADERBOARD_CATEGORIES,
@@ -11,9 +12,11 @@ import {
 } from "@/lib/progression/leaderboard";
 import { LeaderboardIdentity } from "@/components/platform/LeaderboardAvatar";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { hasCompletedOnboarding } from "@/lib/userMetadata";
 
 export default function LeaderboardClient() {
-  const { state } = useProgression();
+  const { isSignedIn, user } = useUser();
+  const { state, refresh } = useProgression();
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [category, setCategory] = useState<string>("geography");
   const [country, setCountry] = useState<string>(state.countryCode);
@@ -27,6 +30,13 @@ export default function LeaderboardClient() {
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
+    if (isSignedIn) {
+      try {
+        await refresh();
+      } catch {
+        /* sync is best-effort */
+      }
+    }
     const params = new URLSearchParams({ scope, limit: "25" });
     if (scope === "country") params.set("country", country);
     if (scope === "category") params.set("category", category);
@@ -44,7 +54,7 @@ export default function LeaderboardClient() {
     } finally {
       setLoading(false);
     }
-  }, [scope, country, category]);
+  }, [scope, country, category, isSignedIn, refresh]);
 
   useEffect(() => {
     void loadBoard();
@@ -72,6 +82,12 @@ export default function LeaderboardClient() {
       void sb.removeChannel(channel);
     };
   }, [loadBoard]);
+
+  const onboarded =
+    isSignedIn &&
+    hasCompletedOnboarding(
+      { publicMetadata: user?.publicMetadata } as Record<string, unknown>,
+    );
 
   const tabs: { id: LeaderboardScope; label: string }[] = [
     { id: "global", label: "Global" },
@@ -165,17 +181,37 @@ export default function LeaderboardClient() {
       {!loading && entries.length === 0 && source === "supabase" && (
         <div className="rounded-2xl border-4 border-dashed border-ink/20 p-10 text-center">
           <p className="font-extrabold text-ink/60">No players ranked yet</p>
-          <p className="mt-2 text-sm font-semibold text-ink/45">
-            Sign in, complete your profile, and play quizzes to earn XP. Real
-            players appear here automatically.
-          </p>
+          {isSignedIn && !onboarded ? (
+            <p className="mt-2 text-sm font-semibold text-ink/45">
+              Finish setting up your profile to join the leaderboard.
+            </p>
+          ) : isSignedIn ? (
+            <p className="mt-2 text-sm font-semibold text-ink/45">
+              You&apos;re on the board once your profile is synced. Play a quiz
+              to earn XP and climb the ranks.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm font-semibold text-ink/45">
+              Sign in and complete your profile, then play quizzes to earn XP.
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/signin"
-              className="inline-block rounded-full border-4 border-ink bg-grass px-5 py-2 font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d]"
-            >
-              Sign in
-            </Link>
+            {!isSignedIn && (
+              <Link
+                href="/signin"
+                className="inline-block rounded-full border-4 border-ink bg-grass px-5 py-2 font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d]"
+              >
+                Sign in
+              </Link>
+            )}
+            {isSignedIn && !onboarded && (
+              <Link
+                href="/onboarding"
+                className="inline-block rounded-full border-4 border-ink bg-grass px-5 py-2 font-extrabold text-white shadow-[0_3px_0_0_#0d0d0d]"
+              >
+                Complete profile
+              </Link>
+            )}
             <Link
               href="/"
               className="inline-block rounded-full border-4 border-ink bg-white px-5 py-2 font-extrabold text-ink shadow-[0_3px_0_0_#0d0d0d]"
