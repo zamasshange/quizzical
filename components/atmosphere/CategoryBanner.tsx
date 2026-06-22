@@ -1,6 +1,7 @@
 "use client";
 
 import CategoryBackground from "@/components/atmosphere/CategoryBackground";
+import CategoryIcon from "@/components/icons/CategoryIcon";
 import type { Category } from "@/lib/quizzes";
 
 type Props = {
@@ -27,16 +28,17 @@ export default function CategoryBanner({
         <div className="pointer-events-none absolute inset-0 bg-quiz-pattern opacity-[0.12]" />
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-4 -top-6 select-none text-[9rem] leading-none opacity-20 md:text-[12rem]"
+          className="pointer-events-none absolute -right-2 -top-4 select-none opacity-15 md:-right-4 md:-top-6"
         >
-          {category.emoji}
+          <CategoryIcon slug={category.slug} size={120} className="text-white" />
         </span>
         <div className="relative flex flex-col gap-3 p-6 md:p-8">
           <span className="w-fit rounded-full border-2 border-ink bg-white/90 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-ink">
             Category
           </span>
-          <h1 className="font-display text-4xl font-black leading-none text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.35)] md:text-5xl">
-            {category.emoji} {category.name}
+          <h1 className="flex items-center gap-3 font-display text-4xl font-black leading-none text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.35)] md:text-5xl">
+            <CategoryIcon slug={category.slug} size={40} className="text-white" />
+            {category.name}
           </h1>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-extrabold text-white/90">
             <span>

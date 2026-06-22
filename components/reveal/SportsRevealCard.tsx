@@ -1,4 +1,5 @@
 import type { PlayerReveal, TeamReveal } from "@/lib/reveal/types";
+import HonourIcon from "@/components/icons/HonourIcon";
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
@@ -85,9 +86,9 @@ export function PlayerRevealCard({ data }: { data: PlayerReveal }) {
               {data.honours.slice(0, 5).map((h, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-1.5 text-sm font-bold text-ink/75"
+                  className="flex items-center gap-2 text-sm font-bold text-ink/75"
                 >
-                  <span aria-hidden>🏆</span>
+                  <HonourIcon honour={h} size={24} />
                   <span>{h}</span>
                 </li>
               ))}

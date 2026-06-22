@@ -1,15 +1,50 @@
 import type { ReactNode } from "react";
+import AppIcon, { type AppIconName } from "@/components/icons/AppIcon";
 
 type InfoHeroProps = {
-  emoji: string;
+  /** Lucide icon — preferred over emoji */
+  icon?: AppIconName;
+  /** Legacy emoji fallback */
+  emoji?: string;
   title: string;
   subtitle: string;
-  /** Tailwind background color class for the hero card */
   accentClass?: string;
   children?: ReactNode;
 };
 
+function IconBadge({
+  icon,
+  emoji,
+  size = "lg",
+}: {
+  icon?: AppIconName;
+  emoji?: string;
+  size?: "sm" | "lg";
+}) {
+  const box =
+    size === "lg"
+      ? "h-14 w-14 rounded-2xl border-[3px] text-3xl"
+      : "h-9 w-9 rounded-xl border-2 text-lg";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center border-ink bg-cream shadow-[0_3px_0_0_#0d0d0d] ${box}`}
+      aria-hidden
+    >
+      {icon ? (
+        <AppIcon
+          name={icon}
+          size={size === "lg" ? 28 : 18}
+          className="text-grass"
+        />
+      ) : (
+        emoji
+      )}
+    </span>
+  );
+}
+
 export function InfoHero({
+  icon,
   emoji,
   title,
   subtitle,
@@ -22,12 +57,9 @@ export function InfoHero({
     >
       <div className="pointer-events-none absolute inset-0 bg-quiz-pattern opacity-[0.08]" />
       <div className="relative px-6 py-10 md:px-10 md:py-14">
-        <span
-          className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-ink bg-cream text-3xl shadow-[0_3px_0_0_#0d0d0d]"
-          aria-hidden
-        >
-          {emoji}
-        </span>
+        <div className="mb-4">
+          <IconBadge icon={icon} emoji={emoji} size="lg" />
+        </div>
         <h1 className="font-display text-3xl font-black leading-tight text-cream md:text-5xl">
           {title}
         </h1>
@@ -43,6 +75,7 @@ export function InfoHero({
 type InfoSectionProps = {
   id?: string;
   title: string;
+  icon?: AppIconName;
   emoji?: string;
   children: ReactNode;
   className?: string;
@@ -51,6 +84,7 @@ type InfoSectionProps = {
 export function InfoSection({
   id,
   title,
+  icon,
   emoji,
   children,
   className = "",
@@ -58,13 +92,8 @@ export function InfoSection({
   return (
     <section id={id} className={`scroll-mt-24 ${className}`}>
       <h2 className="flex items-center gap-2 text-xl font-black text-ink md:text-2xl">
-        {emoji && (
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-white text-lg shadow-[0_2px_0_0_#0d0d0d]"
-            aria-hidden
-          >
-            {emoji}
-          </span>
+        {(icon || emoji) && (
+          <IconBadge icon={icon} emoji={emoji} size="sm" />
         )}
         {title}
       </h2>
@@ -89,7 +118,8 @@ export function InfoCard({ children, className = "" }: InfoCardProps) {
 }
 
 type FeatureGridItem = {
-  emoji: string;
+  icon?: AppIconName;
+  emoji?: string;
   title: string;
   description: string;
   color: string;
@@ -104,11 +134,15 @@ export function FeatureGrid({ items }: { items: FeatureGridItem[] }) {
           className="flex gap-4 rounded-2xl border-4 border-ink bg-white p-5 shadow-[0_4px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5"
         >
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-[3px] border-ink text-2xl shadow-[0_3px_0_0_#0d0d0d]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-[3px] border-ink shadow-[0_3px_0_0_#0d0d0d]"
             style={{ backgroundColor: item.color }}
             aria-hidden
           >
-            {item.emoji}
+            {item.icon ? (
+              <AppIcon name={item.icon} size={24} className="text-ink" />
+            ) : (
+              <span className="text-2xl">{item.emoji}</span>
+            )}
           </span>
           <div>
             <h3 className="font-extrabold text-ink">{item.title}</h3>
