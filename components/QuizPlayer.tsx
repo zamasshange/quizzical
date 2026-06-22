@@ -25,6 +25,7 @@ import {
   recordSeen,
   rotateExcluded,
 } from "@/lib/playHistory";
+import { syncContentHistory } from "@/lib/platform/syncContentHistory";
 
 import {
   clearGameSession,
@@ -213,6 +214,13 @@ export default function QuizPlayer({
     setQuestionImageUrl(next.firstImageUrl);
     if (!next.flagsQuiz) {
       recordSeen(historyKey, { ids: next.questions.map((q) => q.id) });
+      void syncContentHistory({
+        items: next.questions.map((q) => ({
+          contentId: q.id,
+          contentType: "question",
+          category: quiz.category,
+        })),
+      });
     }
     setReady(true);
   }, [quiz, prefetchedImages, historyKey, pendingResume, declinedResume]);
@@ -642,6 +650,13 @@ export default function QuizPlayer({
       const next = prepareTextQuestions(quiz, getExcluded(historyKey).ids);
       setQuestions(next);
       recordSeen(historyKey, { ids: next.map((q) => q.id) });
+      void syncContentHistory({
+        items: next.map((q) => ({
+          contentId: q.id,
+          contentType: "question",
+          category: quiz.category,
+        })),
+      });
     }
 
     setIndex(0);

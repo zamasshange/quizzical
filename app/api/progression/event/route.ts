@@ -7,6 +7,11 @@ import type {
 } from "@/lib/progression/types";
 import { loadUserProgress, persistProgress, fetchUserRank } from "@/lib/progression/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  activityFromProgression,
+  emitActivityEvent,
+} from "@/lib/platform/activity";
+import { recordContentPlays } from "@/lib/platform/contentHistoryServer";
 
 /** POST /api/progression/event — record gameplay progression */
 export async function POST(req: Request) {
@@ -29,10 +34,13 @@ export async function POST(req: Request) {
     | { username?: string; avatarId?: string }
     | undefined;
 
+  const username = meta?.username ?? "Player";
+  const avatarId = meta?.avatarId ?? null;
+
   await persistProgress(
     userId,
-    meta?.username ?? "Player",
-    meta?.avatarId ?? null,
+    username,
+    avatarId,
     raw,
     result.xpEarned,
     payload.type,
@@ -53,6 +61,45 @@ export async function POST(req: Request) {
         { onConflict: "user_id,term" },
       );
     }
+  }
+
+  if (payload.term) {
+    const contentType =
+      result.discovery?.discoveryType ?? payload.quizCategory ?? "general";
+    await recordContentPlays(userId, [
+      {
+        contentId: payload.term,
+        contentType,
+        category: payload.quizCategory ?? payload.category,
+      },
+    ]);
+  }
+
+  const activity = activityFromProgression({
+    username,
+    type: payload.type,
+    term: payload.term,
+    quizCategory: payload.quizCategory,
+    leveledUp: result.leveledUp,
+    newLevel: result.newLevel,
+    badgesUnlocked: result.badgesUnlocked,
+    missionsCompleted: result.missionsCompleted,
+    discovery: result.discovery
+      ? { term: result.discovery.term, isNew: result.discovery.isNew }
+      : undefined,
+  });
+
+  if (activity) {
+    await emitActivityEvent({
+      userId,
+      username,
+      avatarId,
+      countryCode: raw.countryCode,
+      eventKind: activity.eventKind,
+      message: activity.message,
+      emoji: activity.emoji,
+      category: payload.quizCategory,
+    });
   }
 
   const state = toProgressionState(raw);

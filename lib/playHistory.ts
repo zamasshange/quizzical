@@ -4,7 +4,7 @@
 "use client";
 
 const STORAGE_KEY = "quizzical-play-history";
-const TTL_MS = 1000 * 60 * 30; // 30 minutes
+const TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days (guest fallback; signed-in uses server)
 const MAX_ITEMS = 80;
 
 type SeenItem = { v: string; at: number };

@@ -8,6 +8,7 @@ import { homeRows } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
 import PictureGameGrid from "@/components/PictureGameGrid";
 import HomeGameHub from "@/components/HomeGameHub";
+import PlatformHub from "@/components/platform/PlatformHub";
 import ExplorerHub from "@/components/progression/ExplorerHub";
 import JsonLd from "@/components/JsonLd";
 import { homeMetadata } from "@/lib/seo";
@@ -37,6 +38,8 @@ export default function Home() {
         </section>
 
         <HomeGameHub />
+
+        <PlatformHub />
 
         <ExplorerHub />
 

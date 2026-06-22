@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
+import { useProgression } from "@/lib/progression/client";
+import { categories } from "@/lib/quizzes";
 import {
   getActiveSessions,
   getRecentCompletedUnique,
@@ -37,6 +39,7 @@ function buildHubItems(
 
 export default function HomeGameHub() {
   const { isSignedIn } = useUser();
+  const { state, loaded } = useProgression();
   const [active, setActive] = useState<SavedGameSession[]>([]);
   const [recent, setRecent] = useState<GameHistoryEntry[]>([]);
   const [extraCount, setExtraCount] = useState(0);
@@ -67,7 +70,17 @@ export default function HomeGameHub() {
     [active, recent],
   );
 
-  if (items.length === 0) return null;
+  const masteryContinue = useMemo(() => {
+    if (!loaded || !isSignedIn) return null;
+    const inProgress = state.mastery
+      .filter((m) => m.answered > 0 && m.masteryPct < 100)
+      .sort((a, b) => a.masteryPct - b.masteryPct)[0];
+    if (!inProgress) return null;
+    const cat = categories.find((c) => c.slug === inProgress.slug);
+    return { mastery: inProgress, cat };
+  }, [loaded, isSignedIn, state.mastery]);
+
+  if (items.length === 0 && !masteryContinue) return null;
 
   return (
     <motion.section
@@ -96,6 +109,24 @@ export default function HomeGameHub() {
         className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:gap-3 [&::-webkit-scrollbar]:hidden"
         variants={fadeUp}
       >
+        {masteryContinue && (
+          <Link
+            href={`/${masteryContinue.mastery.slug}`}
+            className="flex w-[11.5rem] shrink-0 snap-start items-center gap-2.5 rounded-xl border-[3px] border-ink bg-grass/20 p-3 shadow-[0_3px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 sm:w-56 sm:rounded-2xl sm:border-4 sm:p-4"
+          >
+            <span className="text-2xl sm:text-3xl">
+              {masteryContinue.cat?.emoji ?? "🎯"}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold text-ink sm:text-base">
+                {masteryContinue.cat?.name ?? masteryContinue.mastery.slug}
+              </p>
+              <p className="text-[10px] font-bold text-ink/55 sm:text-xs">
+                Mastery {masteryContinue.mastery.masteryPct}% · Continue journey
+              </p>
+            </div>
+          </Link>
+        )}
         {items.map((item) => {
           if (item.kind === "resume") {
             const s = item.session;

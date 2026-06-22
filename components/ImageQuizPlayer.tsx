@@ -8,6 +8,7 @@ import RevealCard from "./RevealCard";
 import MobileRevealBar from "./MobileRevealBar";
 import QuizStageImage from "./QuizStageImage";
 import { playClick, useGameSounds, useQuizFinishSound } from "@/lib/sound";
+import { syncContentHistory } from "@/lib/platform/syncContentHistory";
 import {
   getExcluded,
   playHistoryKey,
@@ -178,6 +179,10 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           answers: prepared.map((q) => q.answers[q.correct]),
           images: prepared.map((q) => q.image_url),
           ids: prepared.map((q) => q.id),
+        });
+        void syncContentHistory({
+          category: mode.category,
+          answers: prepared.map((q) => q.answers[q.correct]),
         });
 
         setQuestions(prepared);

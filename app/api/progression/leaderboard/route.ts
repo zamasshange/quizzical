@@ -12,11 +12,14 @@ type BoardEntry = {
   title: string;
 };
 
-/** GET /api/progression/leaderboard?scope=global|country|weekly|monthly&country=ZA&category=sports */
+type Scope = "global" | "weekly" | "monthly" | "country" | "category";
+
+/** GET /api/progression/leaderboard?scope=global|country|weekly|monthly|category&country=ZA&category=geography */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const scope = searchParams.get("scope") ?? "global";
+  const scope = (searchParams.get("scope") ?? "global") as Scope;
   const country = searchParams.get("country");
+  const category = searchParams.get("category");
   const limit = Math.min(Number(searchParams.get("limit") ?? 25), 50);
 
   const sb = getSupabaseAdmin();
@@ -24,15 +27,22 @@ export async function GET(req: Request) {
     return NextResponse.json({ entries: [], source: "none" });
   }
 
-  if (scope === "weekly" || scope === "monthly") {
-    const days = scope === "weekly" ? 7 : 30;
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+  if (scope === "weekly" || scope === "monthly" || scope === "category") {
+    const days = scope === "monthly" ? 30 : 7;
 
-    const { data: events } = await sb
+    let eventsQuery = sb
       .from("user_xp_events")
-      .select("user_id, xp_amount")
-      .gte("created_at", since.toISOString());
+      .select("user_id, xp_amount, category")
+      .gte(
+        "created_at",
+        new Date(Date.now() - days * 86400000).toISOString(),
+      );
+
+    if (scope === "category" && category) {
+      eventsQuery = eventsQuery.eq("category", category);
+    }
+
+    const { data: events } = await eventsQuery;
 
     const totals = new Map<string, number>();
     for (const e of events ?? []) {

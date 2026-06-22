@@ -18,6 +18,7 @@ import { getCountry } from "@/lib/progression/countries";
 import { AVATARS, getAvatarById } from "@/lib/avatars";
 import CountryFlag from "@/components/CountryFlag";
 import CountryPicker from "@/components/CountryPicker";
+import DiscoveryProgress from "@/components/platform/DiscoveryProgress";
 import type { ProgressionState } from "@/lib/progression/types";
 
 export default function ProfileClient() {
@@ -184,6 +185,8 @@ export default function ProfileClient() {
                 ))}
             </ul>
           </section>
+
+          <DiscoveryProgress />
 
           {isSignedIn && (
             <section>
