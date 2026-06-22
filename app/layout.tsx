@@ -75,9 +75,9 @@ export default function RootLayout({
     <html
       lang="en"
       translate="no"
-      className={`${nunito.variable} ${baloo.variable} h-full antialiased`}
+      className={`${nunito.variable} ${baloo.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden">
+      <body className="overflow-x-hidden">
         <ClerkProvider signInUrl="/signin" signUpUrl="/signup">
           <AtmosphereProvider>
             {children}

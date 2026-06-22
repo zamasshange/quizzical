@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { InfoCard, InfoHero, InfoSection } from "@/components/info/InfoPageParts";
 import { statusMetadata } from "@/lib/seo";
@@ -141,7 +140,7 @@ export default function StatusPage() {
         </InfoCard>
       </div>
 
-      <Footer />
+
     </SiteShell>
   );
 }

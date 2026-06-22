@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import Button3D from "@/components/Button3D";
 import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
@@ -162,8 +161,6 @@ export default async function EntitySeoPage({ type, slug }: Props) {
           </section>
         )}
       </article>
-
-      <Footer />
     </SiteShell>
   );
 }

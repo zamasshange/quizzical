@@ -29,7 +29,7 @@ export default async function ImageGamePage(props: PageProps<"/play/[mode]">) {
   }
 
   return (
-    <SiteShell showCategories={false}>
+    <SiteShell showCategories={false} showFooter={false}>
       <JsonLd
         data={[
           imageGameJsonLd(game),

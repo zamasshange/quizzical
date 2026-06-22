@@ -7,7 +7,7 @@ export const metadata: Metadata = signUpMetadata();
 
 export default function SignUpPage() {
   return (
-    <SiteShell showCategories={false} centerContent>
+    <SiteShell showCategories={false} centerContent showFooter={false}>
       <SignUpForm />
     </SiteShell>
   );

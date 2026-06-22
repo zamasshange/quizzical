@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import ProfileClient from "@/components/ProfileClient";
 
 export const metadata: Metadata = {
@@ -12,7 +11,6 @@ export default function ProfilePage() {
   return (
     <SiteShell showCategories={false}>
       <ProfileClient />
-      <Footer />
     </SiteShell>
   );
 }

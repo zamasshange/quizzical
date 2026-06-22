@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import LeaderboardClient from "@/components/LeaderboardClient";
 import { buildMetadata } from "@/lib/seo";
 import { BASE_KEYWORDS } from "@/lib/seoKeywords";
@@ -26,7 +25,7 @@ export default function LeaderboardPage() {
           <LeaderboardClient />
         </div>
       </div>
-      <Footer />
+
     </SiteShell>
   );
 }

@@ -33,7 +33,7 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <SiteShell showCategories={false} centerContent>
+    <SiteShell showCategories={false} centerContent showFooter={false}>
       <OnboardingForm />
     </SiteShell>
   );

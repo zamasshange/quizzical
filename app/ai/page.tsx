@@ -8,7 +8,7 @@ export const metadata: Metadata = aiGeneratorMetadata();
 
 export default function AiPage() {
   return (
-    <SiteShell showCategories={false}>
+    <SiteShell showCategories={false} showFooter={false}>
       <JsonLd
         data={{
           "@context": "https://schema.org",

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import ContactForm from "@/components/info/ContactForm";
 import {
@@ -136,7 +135,7 @@ export default function ContactPage() {
         </InfoSection>
       </div>
 
-      <Footer />
+
     </SiteShell>
   );
 }

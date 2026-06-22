@@ -7,7 +7,7 @@ export const metadata: Metadata = signInMetadata();
 
 export default function SignInPage() {
   return (
-    <SiteShell showCategories={false} centerContent>
+    <SiteShell showCategories={false} centerContent showFooter={false}>
       <SignInForm />
     </SiteShell>
   );

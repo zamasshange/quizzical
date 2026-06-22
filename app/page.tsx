@@ -18,13 +18,13 @@ export const metadata: Metadata = homeMetadata();
 
 export default function Home() {
   return (
-    <div className="relative z-0 flex flex-auto flex-col">
+    <div className="relative z-0 flex flex-col">
       <JsonLd data={[websiteJsonLd(), organizationJsonLd()]} />
       <Navbar />
 
       <div className="pointer-events-none absolute inset-0 top-0 z-0 bg-quiz-pattern opacity-[0.05]" />
 
-      <main className="custom-container relative z-10 flex-1 px-4 pb-4 sm:px-6 md:px-8 lg:px-12">
+      <main className="custom-container relative z-10 px-4 pb-6 sm:px-6 md:px-8 lg:px-12">
         {/* Category strip — desktop only; mobile users see games first */}
         <div className="hidden py-6 md:block">
           <CategoryNav />

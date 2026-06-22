@@ -13,7 +13,7 @@ export const metadata: Metadata = buildMetadata({
 
 export default function NotFound() {
   return (
-    <SiteShell showCategories={false}>
+    <SiteShell showCategories={false} showFooter={false}>
       <div className="mx-auto mt-10 flex max-w-md flex-col items-center gap-5 text-center">
         <div className="text-7xl">🤔</div>
         <h1 className="font-display text-5xl font-extrabold">404</h1>

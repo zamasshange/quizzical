@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
-import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { topicMetadata, topicsHubMetadata } from "@/lib/seo";
 import {
@@ -52,7 +51,7 @@ export default function TopicsHubPage() {
         </div>
       </section>
 
-      <Footer />
+
     </SiteShell>
   );
 }

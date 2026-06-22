@@ -33,7 +33,7 @@ export default async function PlayPage(props: PageProps<"/quiz/[id]/play">) {
     : await prefetchQuestionImages(quiz);
 
   return (
-    <SiteShell showCategories={false}>
+    <SiteShell showCategories={false} showFooter={false}>
       <div className="pt-4">
         <QuizPlayer quiz={quiz} prefetchedImages={prefetchedImages} />
       </div>
