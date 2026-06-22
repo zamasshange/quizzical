@@ -65,6 +65,9 @@ function PhotoBackdrop({
   featured?: boolean;
   mosaic?: boolean;
 }) {
+  const bottomFade =
+    "pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/80 via-black/35 to-transparent";
+
   if (urls.length === 0) {
     return (
       <>
@@ -85,8 +88,8 @@ function PhotoBackdrop({
   if (mosaic && urls.length >= 2) {
     const [main, ...rest] = urls;
     return (
-      <div className="absolute inset-0">
-        <div className="grid h-[58%] grid-cols-3 grid-rows-2 gap-px bg-ink/30">
+      <div className="absolute inset-0 bg-ink">
+        <div className="grid h-full grid-cols-3 grid-rows-2 gap-px bg-ink/40">
           <div className="relative col-span-2 row-span-2 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -108,18 +111,13 @@ function PhotoBackdrop({
             </div>
           ))}
         </div>
-        <div
-          className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10"
-          style={{
-            backgroundImage: `linear-gradient(to top, ${color}ee 0%, ${color}99 35%, transparent 70%)`,
-          }}
-        />
+        <div className={bottomFade} />
       </div>
     );
   }
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 bg-ink">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={urls[0]}
@@ -127,12 +125,7 @@ function PhotoBackdrop({
         className="h-full w-full object-cover object-top"
         loading="lazy"
       />
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `linear-gradient(to top, ${color}f0 0%, ${color}aa 28%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.15) 100%)`,
-        }}
-      />
+      <div className={bottomFade} />
     </div>
   );
 }
@@ -159,7 +152,9 @@ function PictureCard({
         className={`relative flex h-full min-h-[10rem] flex-col overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d] sm:min-h-[11rem] ${
           featured ? "sm:min-h-full" : ""
         }`}
-        style={{ backgroundColor: mode.color }}
+        style={{
+          backgroundColor: previewUrls.length > 0 ? "#0d0d0d" : mode.color,
+        }}
       >
         <PhotoBackdrop
           urls={previewUrls}
