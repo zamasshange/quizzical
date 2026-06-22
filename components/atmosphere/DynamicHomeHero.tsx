@@ -31,11 +31,11 @@ export default function DynamicHomeHero() {
   const xpBar = loaded ? xpToNextLevel(state.xp) : null;
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border-[3px] border-ink bg-petrol shadow-[0_4px_0_0_#0d0d0d] md:rounded-3xl md:border-4 md:shadow-[0_6px_0_0_#0d0d0d]">
+    <section className="relative w-full overflow-hidden rounded-2xl border-[3px] border-ink bg-petrol shadow-[0_4px_0_0_#0d0d0d] md:rounded-3xl md:border-4 md:shadow-[0_6px_0_0_#0d0d0d]">
       <CategoryBackground categorySlug="home" showParticles={false}>
         <div className="pointer-events-none absolute inset-0 bg-quiz-pattern opacity-[0.08]" />
 
-        <div className="relative grid gap-2 p-3 md:grid-cols-[1.1fr_0.9fr] md:items-start md:gap-6 md:p-8">
+        <div className="relative grid w-full gap-2 p-4 md:grid-cols-2 md:items-stretch md:gap-6 md:p-8 lg:p-10">
           <div className="flex w-full flex-col items-start gap-2 md:gap-3">
             <SeasonalBanner className="pointer-events-auto hidden w-full max-w-md sm:block" />
 
@@ -121,8 +121,8 @@ export default function DynamicHomeHero() {
             </a>
           </div>
 
-          <div className="hidden md:block">
-            <AiHeroCard />
+          <div className="hidden md:flex md:min-h-0 md:w-full">
+            <AiHeroCard className="h-full w-full" />
           </div>
         </div>
       </CategoryBackground>

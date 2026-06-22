@@ -112,9 +112,9 @@ function FilmStrip({ modes }: { modes: GameMode[] }) {
   if (modes.length === 0) return null;
 
   return (
-    <div className="relative -mx-4 sm:-mx-0">
+    <div className="relative">
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-cream to-transparent sm:w-10" />
-      <div className="flex gap-2 overflow-x-auto px-4 pb-0.5 snap-x snap-mandatory [scrollbar-width:none] sm:gap-2.5 sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory [scrollbar-width:none] sm:gap-2.5 [&::-webkit-scrollbar]:hidden">
         {modes.map((mode) => (
           <motion.div key={mode.slug} variants={fadeUp}>
             <PictureCard mode={mode} />

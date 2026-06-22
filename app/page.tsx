@@ -30,7 +30,9 @@ export default function Home() {
           <CategoryNav />
         </div>
 
-        <DynamicHomeHero />
+        <div className="-mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12">
+          <DynamicHomeHero />
+        </div>
 
         {/* Picture guessing games — grouped grid with full photo previews */}
         <section id="picture-games" className="mt-3 scroll-mt-20 md:mt-7">
