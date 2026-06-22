@@ -101,7 +101,7 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
             <h2 className="mb-3 text-2xl font-black text-ink">
               🖼️ Picture guessing games
             </h2>
-            <PictureGameGrid modes={pictureGames} />
+            <PictureGameGrid modes={pictureGames} variant="compact" />
           </section>
         )}
 

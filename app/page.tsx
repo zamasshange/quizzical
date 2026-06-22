@@ -25,20 +25,15 @@ export default function Home() {
 
       <main className="custom-container relative z-10 flex-1 px-4 pb-4 sm:px-6 md:px-8 lg:px-12">
         {/* Category navigation */}
-        <div className="py-4 md:py-6">
+        <div className="py-2 md:py-6">
           <CategoryNav />
         </div>
 
         <DynamicHomeHero />
 
-        {/* Picture guessing games */}
-        <section id="picture-games" className="mt-5 scroll-mt-24 md:mt-7">
-          <div className="mb-3 flex items-baseline gap-2">
-            <h2 className="text-2xl font-black text-ink">
-              🖼️ Picture guessing games
-            </h2>
-          </div>
-          <PictureGameGrid modes={IMAGE_GAME_MODES} />
+        {/* Picture guessing games — rich bento grid in PictureGameGrid */}
+        <section id="picture-games" className="mt-3 scroll-mt-20 md:mt-7">
+          <PictureGameGrid modes={IMAGE_GAME_MODES} variant="home" />
         </section>
 
         <HomeGameHub />

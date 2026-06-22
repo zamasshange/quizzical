@@ -52,25 +52,27 @@ export default function CategoryNav() {
 
   return (
     <nav className="w-full" aria-label="Quiz categories">
-      <ul className="flex flex-row flex-wrap items-stretch justify-between gap-1 md:gap-2">
+      <ul className="-mx-4 flex snap-x snap-mandatory flex-row items-stretch gap-0.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] md:mx-0 md:flex-wrap md:justify-between md:gap-2 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden">
         {items.map(({ label, href, Icon, count }) => {
           const active = href === "/" ? pathname === "/" : pathname === href;
           return (
-            <li key={href} className="min-w-[4.5rem] flex-1">
+            <li key={href} className="shrink-0 snap-start md:min-w-[4.5rem] md:flex-1">
               <Link
                 href={href}
-                className="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-center"
+                className={`group flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-center md:gap-1 md:rounded-xl md:px-1 md:py-2 ${
+                  active ? "bg-ink/5 md:bg-transparent" : ""
+                }`}
               >
-                <Icon className="h-6 w-6 text-ink md:h-8 md:w-8" />
+                <Icon className="h-5 w-5 text-ink md:h-8 md:w-8" />
                 <span
-                  className={`text-[10px] font-bold leading-tight transition-opacity md:text-[11px] ${
+                  className={`max-w-[4.25rem] truncate text-[9px] font-bold leading-tight transition-opacity md:max-w-none md:text-[11px] ${
                     active ? "opacity-100" : "opacity-60 group-hover:opacity-100"
                   }`}
                 >
                   {label}
                 </span>
                 {count !== undefined && (
-                  <span className="text-[9px] font-extrabold tabular-nums text-ink/40 md:text-[10px]">
+                  <span className="hidden text-[10px] font-extrabold tabular-nums text-ink/40 md:block">
                     {count} {count === 1 ? "game" : "games"}
                   </span>
                 )}

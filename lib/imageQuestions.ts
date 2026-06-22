@@ -77,6 +77,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     emoji: "🎭",
     color: "#b15bff",
     defaultQuestion: "Who is this?",
+    subtitle: "Hollywood, music & pop culture icons",
   },
   {
     slug: "football",
@@ -126,6 +127,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     emoji: "🎬",
     color: "#4d8dff",
     defaultQuestion: "Which movie is this?",
+    subtitle: "Posters, stills & iconic scenes",
   },
   {
     slug: "music",
@@ -135,6 +137,7 @@ export const IMAGE_GAME_MODES: GameMode[] = [
     emoji: "🎵",
     color: "#ff6b6b",
     defaultQuestion: "Who is this artist?",
+    subtitle: "Pop, hip-hop, rock & global stars",
   },
 ];
 

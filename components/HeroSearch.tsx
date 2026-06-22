@@ -41,10 +41,10 @@ export default function HeroSearch() {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      <div className="relative flex-1">
-        <div className="flex items-center gap-2 rounded-full border-4 border-ink bg-white px-4 py-3 shadow-[0_4px_0_0_#0d0d0d]">
-          <SearchIcon className="h-5 w-5 shrink-0 text-ink/60" />
+    <div className="flex flex-row items-stretch gap-2">
+      <div className="relative min-w-0 flex-1">
+        <div className="flex h-full items-center gap-1.5 rounded-full border-[3px] border-ink bg-white px-3 py-2 shadow-[0_3px_0_0_#0d0d0d] sm:gap-2 sm:border-4 sm:px-4 sm:py-3 sm:shadow-[0_4px_0_0_#0d0d0d]">
+          <SearchIcon className="h-4 w-4 shrink-0 text-ink/60 sm:h-5 sm:w-5" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -53,7 +53,7 @@ export default function HeroSearch() {
               blurTimer.current = setTimeout(() => setOpen(false), 120);
             }}
             placeholder="Search quizzes…"
-            className="w-full bg-transparent text-base font-bold text-ink outline-none placeholder:text-ink/40"
+            className="w-full min-w-0 bg-transparent text-sm font-bold text-ink outline-none placeholder:text-ink/40 sm:text-base"
             aria-label="Search quizzes"
           />
         </div>
@@ -105,10 +105,12 @@ export default function HeroSearch() {
         type="button"
         onClick={surpriseMe}
         className="group relative shrink-0 select-none outline-none"
+        aria-label="Surprise me — play a random quiz"
       >
         <span className="absolute inset-0 rounded-full bg-ink" aria-hidden />
-        <span className="relative z-10 block -translate-y-1 rounded-full border-4 border-ink bg-lime px-6 py-2.5 font-extrabold tracking-wide text-ink transition-transform duration-75 group-hover:-translate-y-1.5 group-active:translate-y-0">
-          🎲 Surprise me
+        <span className="relative z-10 flex h-full -translate-y-0.5 items-center rounded-full border-[3px] border-ink bg-lime px-3 py-2 text-xs font-extrabold tracking-wide text-ink transition-transform duration-75 group-hover:-translate-y-1 group-active:translate-y-0 sm:-translate-y-1 sm:border-4 sm:px-6 sm:py-2.5 sm:text-base group-hover:sm:-translate-y-1.5">
+          <span className="sm:hidden" aria-hidden>🎲</span>
+          <span className="hidden sm:inline">🎲 Surprise me</span>
         </span>
       </button>
     </div>
