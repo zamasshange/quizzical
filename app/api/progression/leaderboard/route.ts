@@ -8,7 +8,6 @@ import {
   type LeaderboardScope,
 } from "@/lib/progression/leaderboard";
 import { syncProfileFromClerk } from "@/lib/progression/server";
-import { levelFromXp } from "@/lib/progression/xp";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 import {
   AVATAR_COOKIE_NAME,
@@ -40,13 +39,14 @@ export async function GET(req: Request) {
   if (scope === "weekly") {
     const { data, error } = await sb
       .from("user_progress")
-      .select("username, avatar_id, xp, level, country_code, weekly_xp")
+      .select("username, avatar_id, xp, country_code, weekly_xp")
       .like("user_id", CLERK_USER_ID_FILTER)
       .gt("weekly_xp", 0)
       .order("weekly_xp", { ascending: false })
       .limit(limit);
 
     if (error) {
+      console.error("[leaderboard] weekly query failed:", error.message);
       return NextResponse.json({ entries: [], source: "error" });
     }
 
@@ -56,7 +56,6 @@ export async function GET(req: Request) {
           username: row.username as string,
           avatar_id: (row.avatar_id as string) ?? null,
           xp: row.xp as number,
-          level: row.level as number,
           country_code: row.country_code as string,
         },
         i + 1,
@@ -97,7 +96,7 @@ export async function GET(req: Request) {
     const userIds = sorted.map(([id]) => id);
     const { data: users } = await sb
       .from("user_progress")
-      .select("user_id, username, avatar_id, country_code, xp, level")
+      .select("user_id, username, avatar_id, country_code, xp")
       .like("user_id", CLERK_USER_ID_FILTER)
       .in("user_id", userIds.length ? userIds : ["__none__"]);
 
@@ -110,7 +109,6 @@ export async function GET(req: Request) {
           username: u?.username ?? "Explorer",
           avatar_id: (u?.avatar_id as string) ?? null,
           xp: (u?.xp as number) ?? 0,
-          level: u?.level as number | undefined,
           country_code: (u?.country_code as string) ?? DEFAULT_COUNTRY,
         },
         i + 1,
@@ -123,7 +121,7 @@ export async function GET(req: Request) {
 
   let query = sb
     .from("user_progress")
-    .select("username, avatar_id, xp, level, country_code")
+    .select("username, avatar_id, xp, country_code")
     .like("user_id", CLERK_USER_ID_FILTER)
     .order("xp", { ascending: false })
     .limit(limit);
@@ -134,6 +132,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await query;
   if (error) {
+    console.error("[leaderboard] global query failed:", error.message);
     return NextResponse.json({ entries: [], source: "error" });
   }
 
@@ -143,7 +142,6 @@ export async function GET(req: Request) {
         username: row.username as string,
         avatar_id: (row.avatar_id as string) ?? null,
         xp: row.xp as number,
-        level: (row.level as number) ?? levelFromXp(row.xp as number),
         country_code: row.country_code as string,
       },
       i + 1,
