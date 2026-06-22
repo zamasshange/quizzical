@@ -240,11 +240,19 @@ export function topicsHubMetadata(): Metadata {
 }
 
 export function topicMetadata(topic: SeoTopic): Metadata {
+  const kw = topic.keyword;
   return buildMetadata({
-    title: `${topic.keyword} — Free Online Quiz`,
-    description: `Play free ${topic.keyword} games on Quizzical. Timed quizzes, picture games, and educational facts after every answer.`,
+    title: `${kw} — Free Online Quiz`,
+    description: `Play free ${kw} quizzes on Quizzical. Timed trivia, picture rounds, and educational facts after every answer — no download required.`,
     path: `/topics/${topic.slug}`,
-    keywords: [...BRAND_KEYWORDS, topic.keyword, ...topic.related.slice(0, 8)],
+    keywords: [
+      kw,
+      `${kw} online`,
+      `free ${kw}`,
+      "online quiz",
+      "trivia games",
+      ...topic.related.slice(0, 6),
+    ],
   });
 }
 

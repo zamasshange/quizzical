@@ -29,13 +29,8 @@ export const metadata: Metadata = {
     "Challenge yourself with hundreds of quiz games covering geography, sports, movies, history, science, music, and more. Learn, compete, and become a Knowledge Explorer.",
   applicationName: SITE_NAME,
   keywords: [...BASE_KEYWORDS, ...BRAND_KEYWORDS],
-  authors: [
-    { name: "BDL Corp", url: SITE_URL },
-    { name: "Zama Shange", url: SITE_URL },
-    { name: "Sonke AI", url: SITE_URL },
-    { name: "Burdolar", url: SITE_URL },
-  ],
-  creator: "BDL Corp · Zama Shange · Sonke AI · Burdolar",
+  authors: [{ name: "BDL Corp", url: SITE_URL }],
+  creator: "BDL Corp",
   publisher: "BDL Corp",
   formatDetection: { email: false, address: false, telephone: false },
   openGraph: {

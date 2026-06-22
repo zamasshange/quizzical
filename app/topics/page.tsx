@@ -7,7 +7,6 @@ import { topicMetadata, topicsHubMetadata } from "@/lib/seo";
 import {
   getAllSeoTopics,
   getSeoTopicBySlug,
-  TOPIC_BRAND_LINE,
   topicCount,
 } from "@/lib/seoTopics";
 import { categories, quizzes } from "@/lib/quizzes";
@@ -33,9 +32,9 @@ export default function TopicsHubPage() {
           Quiz topics &amp; keywords
         </h1>
         <p className="mt-3 text-base font-bold text-ink/65">
-          Browse {topicCount()} SEO topics on Quizzical — free online quiz games
-          by {TOPIC_BRAND_LINE}. Every page below is listed in our sitemap for
-          search engines.
+          Browse {topicCount()} quiz topics on Quizzical — free online trivia for
+          geography, sports, movies, history, science, and more. Every page is
+          listed in our sitemap for search engines.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2">

@@ -33,6 +33,14 @@ const SLUG_ALIASES: Record<string, string> = {
   "premier-league-quiz": "football-quiz",
   "picture-quiz-online": "picture-quiz",
   "flag-quiz-online": "flag-quiz",
+  "beginner-trivia": "beginner-quiz",
+  "poetry-trivia": "poetry-quiz",
+  "rugby-trivia": "rugby-quiz",
+  "visual-trivia": "visual-quiz",
+  "science-trivia-online": "science-trivia-online",
+  "geography-trivia": "geography-quiz-online",
+  "history-trivia": "history-quiz-online",
+  "movie-trivia": "film-trivia",
 };
 
 export function keywordToSlug(keyword: string): string {
@@ -144,9 +152,8 @@ export function getSeoTopicBySlug(slug: string): SeoTopic | undefined {
   return buildDynamicTopic(normalized);
 }
 
-/** Brand names always surfaced on topic pages. */
-export const TOPIC_BRAND_LINE = BRAND_KEYWORDS.slice(0, 4).join(" · ");
-
+/** Short label for topic hub pages — not stuffed into every meta description. */
+export const TOPIC_BRAND_LINE = "Quizzical";
 export function topicCount(): number {
   return getAllSeoTopics().length;
 }

@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: "/Topics/:slug",
-        destination: "/topics/:slug",
+        source: "/Topics/:path*",
+        destination: "/topics/:path*",
         permanent: true,
       },
     ];

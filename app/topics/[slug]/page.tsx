@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import JsonLd from "@/components/JsonLd";
@@ -8,7 +8,6 @@ import {
   getAllSeoTopics,
   getSeoTopicBySlug,
   keywordToSlug,
-  TOPIC_BRAND_LINE,
 } from "@/lib/seoTopics";
 import { categories, quizzes } from "@/lib/quizzes";
 import { IMAGE_GAME_MODES } from "@/lib/imageQuestions";
@@ -51,10 +50,19 @@ function suggestedCategories(keyword: string) {
   );
 }
 
+function topicIntro(keyword: string): string {
+  return `Play free ${keyword} quizzes on Quizzical — timed trivia, picture rounds, flag games, and learn-more reveals after every answer. No download or sign-up required; works on phone and desktop.`;
+}
+
 export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
-  const { slug } = await props.params;
+  const { slug: rawSlug } = await props.params;
+  const slug = rawSlug.toLowerCase().trim();
   const topic = getSeoTopicBySlug(slug);
   if (!topic) notFound();
+
+  if (topic.slug !== slug) {
+    redirect(`/topics/${topic.slug}`);
+  }
 
   const matchedQuizzes = suggestedQuizzes(topic.keyword);
   const matchedCategories = suggestedCategories(topic.keyword);
@@ -73,16 +81,13 @@ export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
 
       <article className="mx-auto max-w-3xl">
         <p className="text-xs font-extrabold uppercase tracking-wide text-ink/45">
-          Quizzical topic · {TOPIC_BRAND_LINE}
+          Free online quiz · Quizzical
         </p>
         <h1 className="mt-2 font-display text-4xl font-black capitalize text-ink md:text-5xl">
           {topic.keyword}
         </h1>
         <p className="mt-4 text-base font-bold leading-relaxed text-ink/70">
-          Play free <strong>{topic.keyword}</strong> games online at
-          Quizzical.site — a BDL Corp trivia platform built with Sonke AI,
-          Zama Shange, and Burdolar. Timed quizzes, picture games, flag trivia,
-          and an AI quiz generator. Learn something new after every answer.
+          {topicIntro(topic.keyword)}
         </p>
 
         {topic.related.length > 0 && (
@@ -170,8 +175,6 @@ export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
           </ul>
         </section>
       </article>
-
-
     </SiteShell>
   );
 }
