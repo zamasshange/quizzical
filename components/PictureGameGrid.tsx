@@ -18,16 +18,6 @@ const MODE_ICONS: Record<string, AppIconName> = {
   music: "sparkles",
 };
 
-const TEASERS: Record<string, string> = {
-  celebrity: "Hollywood, music & pop culture — name the face",
-  football: "Global soccer stars from real match photos",
-  basketball: "NBA legends and rising stars",
-  cricket: "International cricket heroes",
-  athlete: "Olympians, F1, tennis & more",
-  movie: "Posters, stills & iconic scenes",
-  music: "Pop, hip-hop, rock & global artists",
-};
-
 const previewCache = new Map<string, string>();
 
 async function fetchPreviewUrl(term: string): Promise<string | null> {
@@ -69,58 +59,44 @@ function usePreviewImage(terms: string[]) {
   return url;
 }
 
+function shortTitle(title: string) {
+  return title.replace(/^Guess the /i, "");
+}
+
 function PictureCard({ mode }: { mode: GameMode }) {
   const previewUrl = usePreviewImage(mode.previewTerms);
   const icon = MODE_ICONS[mode.slug] ?? "sparkles";
-  const teaser = mode.subtitle ?? TEASERS[mode.slug] ?? mode.defaultQuestion;
-  const group =
-    mode.quizCategorySlug === "sports" ? "Sports" : "Entertainment";
+  const label = shortTitle(mode.title);
 
   return (
     <Link
       href={`/play/${mode.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border-[3px] border-ink bg-white shadow-[0_4px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 hover:shadow-[0_6px_0_0_#0d0d0d]"
+      className="group block w-[10.5rem] shrink-0 snap-start sm:w-[11.5rem] md:w-[12.5rem]"
     >
-      <div className="relative aspect-[5/4] w-full shrink-0">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
         {previewUrl ? (
           <ContainedPhoto
             src={previewUrl}
             alt={`${mode.title} preview`}
-            className="h-full w-full"
+            className="absolute inset-0 h-full w-full"
           />
         ) : (
           <div
-            className="flex h-full w-full flex-col items-center justify-center gap-2"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5"
             style={{ backgroundColor: mode.color }}
           >
-            <AppIcon name={icon} size={40} className="text-white/90" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-white/70">
-              Loading preview…
-            </span>
+            <AppIcon name={icon} size={28} className="text-white/90" />
           </div>
         )}
-        <span className="absolute left-2 top-2 z-20 rounded-full border-2 border-ink/30 bg-black/50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white backdrop-blur-sm">
-          {group}
-        </span>
-      </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-        <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-grass">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-ink via-ink/75 to-transparent px-2.5 pb-2.5 pt-12">
+          <p className="text-[9px] font-extrabold uppercase tracking-wide text-lime/90">
             Picture quiz
           </p>
-          <h3 className="mt-0.5 font-display text-base font-black leading-tight text-ink sm:text-lg">
-            {mode.title}
+          <h3 className="mt-0.5 font-display text-sm font-black leading-tight text-white">
+            {label}
           </h3>
-          <p className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-ink/60">
-            {teaser}
-          </p>
-        </div>
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-ink/10 pt-2">
-          <span className="text-[10px] font-bold text-ink/45">
-            {mode.defaultQuestion}
-          </span>
-          <span className="rounded-full border-2 border-ink bg-grass px-3 py-1 text-[10px] font-extrabold text-white sm:text-xs">
+          <span className="mt-1.5 inline-flex items-center rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[9px] font-extrabold text-white backdrop-blur-sm transition-colors group-hover:border-lime/50 group-hover:bg-grass group-hover:text-white">
             Play →
           </span>
         </div>
@@ -129,7 +105,7 @@ function PictureCard({ mode }: { mode: GameMode }) {
   );
 }
 
-function ModeGroup({
+function FilmStripRow({
   label,
   modes,
 }: {
@@ -137,17 +113,26 @@ function ModeGroup({
   modes: GameMode[];
 }) {
   if (modes.length === 0) return null;
+
   return (
     <div>
-      <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-ink/45">
-        {label}
-      </h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {modes.map((mode) => (
-          <motion.div key={mode.slug} variants={fadeUp}>
-            <PictureCard mode={mode} />
-          </motion.div>
-        ))}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-xs font-extrabold uppercase tracking-wide text-ink/45">
+          {label}
+        </h3>
+        <span className="hidden text-[10px] font-bold text-ink/30 sm:inline">
+          Scroll →
+        </span>
+      </div>
+      <div className="relative -mx-4 sm:-mx-0">
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-cream to-transparent sm:w-10" />
+        <div className="flex gap-2.5 overflow-x-auto px-4 pb-1 snap-x snap-mandatory [scrollbar-width:none] sm:gap-3 sm:px-0 [&::-webkit-scrollbar]:hidden">
+          {modes.map((mode) => (
+            <motion.div key={mode.slug} variants={fadeUp}>
+              <PictureCard mode={mode} />
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -167,17 +152,12 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
   if (variant === "compact") {
     return (
       <motion.div
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         variants={staggerContainer}
         initial="hidden"
         whileInView="visible"
         viewport={sectionViewport}
       >
-        {modes.map((mode) => (
-          <motion.div key={mode.slug} variants={fadeUp}>
-            <PictureCard mode={mode} />
-          </motion.div>
-        ))}
+        <FilmStripRow label="All modes" modes={modes} />
       </motion.div>
     );
   }
@@ -190,25 +170,25 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
       variants={staggerContainer}
       className="relative"
     >
-      <motion.div variants={fadeUp} className="mb-5 md:mb-6">
+      <motion.div variants={fadeUp} className="mb-4 md:mb-5">
         <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-grass">
           Picture quizzes
         </p>
-        <h2 className="mt-1 font-display text-2xl font-black leading-tight text-ink md:text-3xl">
+        <h2 className="mt-1 font-display text-xl font-black leading-tight text-ink md:text-2xl">
           Who&apos;s in the photo?
         </h2>
-        <p className="mt-2 max-w-2xl text-sm font-bold leading-relaxed text-ink/60">
-          Real photos of celebrities, athletes, and films. Guess the name, then
-          unlock a full profile with stats and facts after every round.
+        <p className="mt-1.5 max-w-xl text-sm font-bold text-ink/55">
+          Swipe through real photos — guess the name, unlock the full profile
+          after every round.
         </p>
       </motion.div>
 
-      <motion.div variants={staggerContainer} className="flex flex-col gap-8">
+      <motion.div variants={staggerContainer} className="flex flex-col gap-5">
         <motion.div variants={fadeUp}>
-          <ModeGroup label="Entertainment" modes={entertainment} />
+          <FilmStripRow label="Entertainment" modes={entertainment} />
         </motion.div>
         <motion.div variants={fadeUp}>
-          <ModeGroup label="Sports" modes={sports} />
+          <FilmStripRow label="Sports" modes={sports} />
         </motion.div>
       </motion.div>
     </motion.section>
