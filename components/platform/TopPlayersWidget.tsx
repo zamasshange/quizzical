@@ -2,43 +2,45 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  type LeaderboardEntry,
-} from "@/lib/progression/leaderboard";
+import { type LeaderboardEntry } from "@/lib/progression/leaderboard";
 import { LeaderboardIdentity } from "@/components/platform/LeaderboardAvatar";
 import AppIcon from "@/components/icons/AppIcon";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { debounce } from "@/lib/debounce";
 
 /** Homepage widget — top 5 global XP players with live updates. */
 export default function TopPlayersWidget() {
   const [players, setPlayers] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showSpinner: boolean) => {
+    if (showSpinner) setLoading(true);
     try {
       const res = await fetch("/api/progression/leaderboard?scope=global&limit=5");
       const data = (await res.json()) as { entries?: LeaderboardEntry[] };
       setPlayers(data.entries ?? []);
     } catch {
-      setPlayers([]);
+      if (showSpinner) setPlayers([]);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void load();
-    const poll = setInterval(() => void load(), 30000);
+    void load(true);
+    const poll = setInterval(() => void load(false), 60000);
 
     const sb = getSupabaseBrowser();
     if (!sb) return () => clearInterval(poll);
+
+    const refreshQuietly = debounce(() => void load(false), 2000);
 
     const channel = sb
       .channel("top_players")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "user_progress" },
-        () => void load(),
+        { event: "INSERT", schema: "public", table: "user_xp_events" },
+        refreshQuietly,
       )
       .subscribe();
 
@@ -48,14 +50,14 @@ export default function TopPlayersWidget() {
     };
   }, [load]);
 
-  if (loading) {
+  if (loading && players.length === 0) {
     return (
       <section className="mt-5 md:mt-7">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-ink md:text-xl">
           <AppIcon name="trophy" size={22} className="text-grass" />
           Top players
         </h2>
-        <div className="space-y-2 animate-pulse">
+        <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-12 rounded-2xl bg-cream-dark" />
           ))}

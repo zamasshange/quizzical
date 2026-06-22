@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { useProgression } from "@/lib/progression/client";
 import {
   LEADERBOARD_CATEGORIES,
   LEADERBOARD_COUNTRIES,
@@ -12,68 +11,71 @@ import {
 } from "@/lib/progression/leaderboard";
 import { LeaderboardIdentity } from "@/components/platform/LeaderboardAvatar";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { debounce } from "@/lib/debounce";
 import { hasCompletedOnboarding } from "@/lib/userMetadata";
 
 export default function LeaderboardClient() {
   const { isSignedIn, user } = useUser();
-  const { state, refresh } = useProgression();
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [category, setCategory] = useState<string>("geography");
-  const [country, setCountry] = useState<string>(state.countryCode);
+  const [country, setCountry] = useState<string>("ZA");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [source, setSource] = useState<"supabase" | "none" | "error">("none");
   const [loading, setLoading] = useState(true);
+  const syncedRef = useRef(false);
 
-  useEffect(() => {
-    setCountry(state.countryCode);
-  }, [state.countryCode]);
+  const fetchBoard = useCallback(
+    async (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
 
-  const loadBoard = useCallback(async () => {
-    setLoading(true);
-    if (isSignedIn) {
+      const params = new URLSearchParams({ scope, limit: "25" });
+      if (scope === "country") params.set("country", country);
+      if (scope === "category") params.set("category", category);
+
       try {
-        await refresh();
+        const res = await fetch(`/api/progression/leaderboard?${params}`);
+        const data = (await res.json()) as {
+          entries?: LeaderboardEntry[];
+          source?: "supabase" | "none" | "error";
+        };
+        setEntries(data.entries ?? []);
+        setSource(data.source ?? "none");
       } catch {
-        /* sync is best-effort */
+        if (showSpinner) {
+          setEntries([]);
+          setSource("error");
+        }
+      } finally {
+        if (showSpinner) setLoading(false);
       }
-    }
-    const params = new URLSearchParams({ scope, limit: "25" });
-    if (scope === "country") params.set("country", country);
-    if (scope === "category") params.set("category", category);
-    try {
-      const res = await fetch(`/api/progression/leaderboard?${params}`);
-      const data = (await res.json()) as {
-        entries?: LeaderboardEntry[];
-        source?: "supabase" | "none" | "error";
-      };
-      setEntries(data.entries ?? []);
-      setSource(data.source ?? "none");
-    } catch {
-      setEntries([]);
-      setSource("error");
-    } finally {
-      setLoading(false);
-    }
-  }, [scope, country, category, isSignedIn, refresh]);
+    },
+    [scope, country, category],
+  );
 
   useEffect(() => {
-    void loadBoard();
-    const poll = setInterval(() => void loadBoard(), 30000);
+    if (!isSignedIn || syncedRef.current) return;
+    syncedRef.current = true;
+    void fetch("/api/progression").catch(() => undefined);
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    void fetchBoard(true);
+  }, [fetchBoard]);
+
+  useEffect(() => {
+    const poll = setInterval(() => void fetchBoard(false), 60000);
 
     const sb = getSupabaseBrowser();
     if (!sb) return () => clearInterval(poll);
+
+    const refreshQuietly = debounce(() => void fetchBoard(false), 2000);
 
     const channel = sb
       .channel("leaderboard_pulse")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "user_progress" },
-        () => void loadBoard(),
-      )
-      .on(
-        "postgres_changes",
         { event: "INSERT", schema: "public", table: "user_xp_events" },
-        () => void loadBoard(),
+        refreshQuietly,
       )
       .subscribe();
 
@@ -81,7 +83,7 @@ export default function LeaderboardClient() {
       clearInterval(poll);
       void sb.removeChannel(channel);
     };
-  }, [loadBoard]);
+  }, [fetchBoard]);
 
   const onboarded =
     isSignedIn &&
@@ -97,6 +99,9 @@ export default function LeaderboardClient() {
     { id: "category", label: "By category" },
   ];
 
+  const showSkeleton = loading && entries.length === 0;
+  const showList = entries.length > 0;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
@@ -104,10 +109,7 @@ export default function LeaderboardClient() {
           <button
             key={t.id}
             type="button"
-            onClick={() => {
-              setLoading(true);
-              setScope(t.id);
-            }}
+            onClick={() => setScope(t.id)}
             className={`rounded-full border-2 px-3 py-1 text-xs font-extrabold ${
               scope === t.id
                 ? "border-ink bg-grass text-white"
@@ -125,10 +127,7 @@ export default function LeaderboardClient() {
             <button
               key={c.code}
               type="button"
-              onClick={() => {
-                setLoading(true);
-                setCountry(c.code);
-              }}
+              onClick={() => setCountry(c.code)}
               className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${
                 country === c.code
                   ? "border-ink bg-lime/40 text-ink"
@@ -147,10 +146,7 @@ export default function LeaderboardClient() {
             <button
               key={c.slug}
               type="button"
-              onClick={() => {
-                setLoading(true);
-                setCategory(c.slug);
-              }}
+              onClick={() => setCategory(c.slug)}
               className={`rounded-full border px-2.5 py-0.5 text-[11px] font-extrabold ${
                 category === c.slug
                   ? "border-ink bg-lime/40 text-ink"
@@ -170,8 +166,8 @@ export default function LeaderboardClient() {
         </p>
       )}
 
-      {loading && (
-        <div className="space-y-2 animate-pulse">
+      {showSkeleton && (
+        <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-14 rounded-2xl bg-cream-dark" />
           ))}
@@ -187,8 +183,7 @@ export default function LeaderboardClient() {
             </p>
           ) : isSignedIn ? (
             <p className="mt-2 text-sm font-semibold text-ink/45">
-              You&apos;re on the board once your profile is synced. Play a quiz
-              to earn XP and climb the ranks.
+              Play a quiz while signed in to earn XP and climb the ranks.
             </p>
           ) : (
             <p className="mt-2 text-sm font-semibold text-ink/45">
@@ -222,7 +217,7 @@ export default function LeaderboardClient() {
         </div>
       )}
 
-      {entries.length > 0 && (
+      {showList && (
         <ol className="flex flex-col gap-2">
           {entries.map((e) => (
             <li key={`${e.rank}-${e.username}`}>

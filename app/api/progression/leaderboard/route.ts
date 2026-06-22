@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
 import { CLERK_USER_ID_FILTER } from "@/lib/progression/clerkUserId";
 import { DEFAULT_COUNTRY } from "@/lib/progression/countries";
 import {
   rowToLeaderboardEntry,
   type LeaderboardScope,
 } from "@/lib/progression/leaderboard";
-import { syncProfileFromClerk } from "@/lib/progression/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
-import {
-  AVATAR_COOKIE_NAME,
-  ONBOARDING_COOKIE_NAME,
-} from "@/lib/userMetadata";
 
 /** GET /api/progression/leaderboard?scope=global|country|weekly|monthly|category&country=ZA&category=geography */
 export async function GET(req: Request) {
@@ -25,15 +18,6 @@ export async function GET(req: Request) {
   const sb = getSupabaseAdmin();
   if (!isSupabaseConfigured() || !sb) {
     return NextResponse.json({ entries: [], source: "none" });
-  }
-
-  const { userId, sessionClaims } = await auth();
-  if (userId) {
-    const jar = await cookies();
-    await syncProfileFromClerk(userId, sessionClaims, {
-      avatar: jar.get(AVATAR_COOKIE_NAME)?.value,
-      onboarded: jar.get(ONBOARDING_COOKIE_NAME)?.value,
-    });
   }
 
   if (scope === "weekly") {

@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { CLERK_USER_ID_FILTER } from "./clerkUserId";
 import { DEFAULT_COUNTRY } from "./countries";
+import { createEmptyRaw } from "./defaults";
 import { generateDailyMissions } from "./missions";
 import { resolveClerkIdentity } from "./resolveClerkIdentity";
 import { levelFromXp, todayKey } from "./xp";
@@ -17,15 +18,44 @@ export async function syncProfileFromClerk(
   const identity = await resolveClerkIdentity(userId, sessionClaims, cookies);
   if (!identity) return;
 
-  const raw = await loadUserProgress(userId);
-  await persistProgress(
-    userId,
-    identity.username,
-    identity.avatarId,
-    raw,
-    0,
-    "profile_sync",
-  );
+  const sb = getSupabaseAdmin();
+  if (!sb) return;
+
+  const { data: existing } = await sb
+    .from("user_progress")
+    .select("user_id, username, avatar_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (
+    existing &&
+    existing.username === identity.username &&
+    (existing.avatar_id ?? null) === identity.avatarId
+  ) {
+    return;
+  }
+
+  if (!existing) {
+    const raw = createEmptyRaw(DEFAULT_COUNTRY);
+    await persistProgress(
+      userId,
+      identity.username,
+      identity.avatarId,
+      raw,
+      0,
+      "profile_sync",
+    );
+    return;
+  }
+
+  await sb
+    .from("user_progress")
+    .update({
+      username: identity.username,
+      avatar_id: identity.avatarId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
 }
 
 export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscovery[]): RawState {
