@@ -63,7 +63,13 @@ function shortTitle(title: string) {
   return title.replace(/^Guess the /i, "");
 }
 
-function PictureCard({ mode }: { mode: GameMode }) {
+function PictureCard({
+  mode,
+  fill = false,
+}: {
+  mode: GameMode;
+  fill?: boolean;
+}) {
   const previewUrl = usePreviewImage(mode.previewTerms);
   const icon = MODE_ICONS[mode.slug] ?? "sparkles";
   const label = shortTitle(mode.title);
@@ -73,7 +79,11 @@ function PictureCard({ mode }: { mode: GameMode }) {
   return (
     <Link
       href={`/play/${mode.slug}`}
-      className="group block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem] md:w-[10.25rem]"
+      className={
+        fill
+          ? "group block w-full min-w-0"
+          : "group block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem]"
+      }
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
         {previewUrl ? (
@@ -108,24 +118,32 @@ function PictureCard({ mode }: { mode: GameMode }) {
   );
 }
 
-function FilmStrip({ modes }: { modes: GameMode[] }) {
-  if (modes.length === 0) return null;
-
+function MobileFilmStrip({ modes }: { modes: GameMode[] }) {
   return (
-    <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-cream to-transparent sm:w-10" />
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory [scrollbar-width:none] sm:gap-2.5 [&::-webkit-scrollbar]:hidden">
+    <div className="relative md:hidden">
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-cream to-transparent" />
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {modes.map((mode) => (
-          <motion.div key={mode.slug} variants={fadeUp}>
-            <PictureCard mode={mode} />
-          </motion.div>
+          <PictureCard key={mode.slug} mode={mode} />
         ))}
       </div>
     </div>
   );
 }
 
-/** Entertainment first, then sports — single scroll row. */
+function DesktopGrid({ modes }: { modes: GameMode[] }) {
+  return (
+    <div className="hidden gap-3 md:grid md:grid-cols-7">
+      {modes.map((mode) => (
+        <motion.div key={mode.slug} variants={fadeUp} className="min-w-0">
+          <PictureCard mode={mode} fill />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/** Entertainment first, then sports — single row. */
 function orderModes(modes: GameMode[]) {
   const entertainment = modes.filter(
     (m) => m.quizCategorySlug === "entertainment",
@@ -152,7 +170,8 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
         whileInView="visible"
         viewport={sectionViewport}
       >
-        <FilmStrip modes={ordered} />
+        <MobileFilmStrip modes={ordered} />
+        <DesktopGrid modes={ordered} />
       </motion.div>
     );
   }
@@ -167,23 +186,24 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
     >
       <motion.div
         variants={fadeUp}
-        className="mb-2.5 flex items-end justify-between gap-3"
+        className="mb-2 flex items-baseline justify-between gap-2 md:mb-3"
       >
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-grass">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-grass md:text-xs">
             Picture quizzes
           </p>
-          <h2 className="font-display text-lg font-black leading-tight text-ink md:text-xl">
+          <h2 className="text-lg font-black text-ink md:text-2xl">
             Who&apos;s in the photo?
           </h2>
         </div>
-        <span className="shrink-0 pb-0.5 text-[10px] font-bold text-ink/30">
+        <span className="shrink-0 text-xs font-extrabold text-ink/30 md:hidden">
           Scroll →
         </span>
       </motion.div>
 
       <motion.div variants={fadeUp}>
-        <FilmStrip modes={ordered} />
+        <MobileFilmStrip modes={ordered} />
+        <DesktopGrid modes={ordered} />
       </motion.div>
     </motion.section>
   );
