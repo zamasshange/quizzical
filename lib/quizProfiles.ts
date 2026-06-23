@@ -1,5 +1,6 @@
 import type { Quiz } from "./quizzes";
-import { isFlagsQuiz, FLAGS_PER_ROUND } from "./flagQuiz";
+import { isFlagsQuiz } from "./flagQuiz";
+import { QUESTION_COUNT_RANGE_LABEL } from "./quizRoundSettings";
 import { COUNTRY_COUNT } from "./allCountries";
 
 export type QuizProfile = {
@@ -129,11 +130,11 @@ function difficultyFromQuiz(quiz: Quiz): QuizProfile["difficulty"] {
 export function getQuizProfile(quiz: Quiz): QuizProfile {
   const extra = THUMBNAILS[quiz.id] ?? {};
   const questionCount = isFlagsQuiz(quiz.id)
-    ? FLAGS_PER_ROUND
+    ? QUESTION_COUNT_RANGE_LABEL
     : quiz.questions.length;
 
   const questionLabel = isFlagsQuiz(quiz.id)
-    ? `${COUNTRY_COUNT} flags in pool`
+    ? `${COUNTRY_COUNT} flags · choose ${QUESTION_COUNT_RANGE_LABEL} per round`
     : `${questionCount} questions`;
 
   return {

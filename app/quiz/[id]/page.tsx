@@ -4,7 +4,8 @@ import SiteShell from "@/components/SiteShell";
 import Button3D from "@/components/Button3D";
 import { getCategory, getQuiz, quizzes } from "@/lib/quizzes";
 import { getQuizProfile } from "@/lib/quizProfiles";
-import { FLAGS_PER_ROUND, isFlagsQuiz } from "@/lib/flagQuiz";
+import { isFlagsQuiz } from "@/lib/flagQuiz";
+import { QUESTION_COUNT_RANGE_LABEL } from "@/lib/quizRoundSettings";
 import { COUNTRY_COUNT } from "@/lib/allCountries";
 import JsonLd from "@/components/JsonLd";
 import { quizMetadata } from "@/lib/seo";
@@ -37,7 +38,7 @@ export default async function QuizOverviewPage(
   const category = getCategory(quiz.category);
   const profile = getQuizProfile(quiz);
   const questionCount = isFlagsQuiz(quiz.id)
-    ? FLAGS_PER_ROUND
+    ? QUESTION_COUNT_RANGE_LABEL
     : quiz.questions.length;
   const poolNote = isFlagsQuiz(quiz.id)
     ? `${COUNTRY_COUNT} countries in the pool`

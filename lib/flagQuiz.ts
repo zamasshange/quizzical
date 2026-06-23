@@ -1,8 +1,11 @@
 import type { Question } from "./quizzes";
 import { ALL_COUNTRIES } from "./allCountries";
+import { DEFAULT_QUESTION_COUNT } from "./quizRoundSettings";
 
 export const FLAGS_QUIZ_ID = "flags-of-the-world";
-export const FLAGS_PER_ROUND = 10;
+
+/** @deprecated Use DEFAULT_QUESTION_COUNT — kept for static metadata fallbacks. */
+export const FLAGS_PER_ROUND = DEFAULT_QUESTION_COUNT;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];

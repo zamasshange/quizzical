@@ -36,6 +36,11 @@ import {
   prefetchUpcoming,
   questionPrefetchUrls,
 } from "@/lib/quizImageUrl";
+import QuestionCountPicker from "./QuestionCountPicker";
+import {
+  DEFAULT_QUESTION_COUNT,
+  type QuestionCount,
+} from "@/lib/quizRoundSettings";
 
 type SourceQuestion = {
   id: string;
@@ -61,9 +66,6 @@ const TIMER_OPTIONS = [10, 15, 20, 30, 45] as const;
 type TimerSeconds = (typeof TIMER_OPTIONS)[number];
 const DEFAULT_TIMER: TimerSeconds = 20;
 const MAX_POINTS = 1000;
-const MAX_QUESTIONS = 10;
-const START_COUNT = 5;
-const REFILL_COUNT = 10;
 
 type Phase = "playing" | "reveal" | "finished";
 type Status = "setup" | "loading" | "ready" | "empty" | "error";
@@ -87,9 +89,9 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function prepare(rows: SourceQuestion[]): PreparedQuestion[] {
+function prepare(rows: SourceQuestion[], maxCount: number): PreparedQuestion[] {
   return shuffle(rows)
-    .slice(0, MAX_QUESTIONS)
+    .slice(0, maxCount)
     .map((row) => {
       const answers = shuffle([row.correct_answer, ...row.wrong_answers]);
       return {
@@ -120,6 +122,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const [declinedResume, setDeclinedResume] = useState(false);
   const [paused, setPaused] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
+  const [questionCount, setQuestionCount] = useState<QuestionCount>(
+    DEFAULT_QUESTION_COUNT,
+  );
   const [timerSeconds, setTimerSeconds] = useState<TimerSeconds>(DEFAULT_TIMER);
   const [loadProgress, setLoadProgress] = useState("");
   const [questions, setQuestions] = useState<PreparedQuestion[]>([]);
@@ -181,31 +186,31 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   );
 
   const warmQuiz = useCallback(
-    (level: Difficulty) => {
+    (level: Difficulty, count: QuestionCount) => {
       const historyKey = playHistoryKey("image", mode.category, level);
       const excluded = getExcluded(historyKey);
-      const key = `${mode.category}|${level}|${excluded.answers.length}`;
+      const key = `${mode.category}|${level}|${count}|${excluded.answers.length}`;
       warmRef.current = {
         key,
-        promise: fetchQuizRows(level, START_COUNT, excluded, true),
+        promise: fetchQuizRows(level, count, excluded, true),
       };
     },
     [mode.category, fetchQuizRows],
   );
 
   useEffect(() => {
-    if (status === "setup") warmQuiz(difficulty);
-  }, [status, difficulty, warmQuiz]);
+    if (status === "setup") warmQuiz(difficulty, questionCount);
+  }, [status, difficulty, questionCount, warmQuiz]);
 
   const loadQuestions = useCallback(
-    async (level: Difficulty, rotate = false) => {
+    async (level: Difficulty, count: QuestionCount, rotate = false) => {
       setStatus("loading");
       setLoadProgress("Starting game…");
       const historyKey = playHistoryKey("image", mode.category, level);
       if (rotate) rotateExcluded(historyKey);
       const excluded = getExcluded(historyKey);
       const isMovie = mode.category === "Movie";
-      const warmKey = `${mode.category}|${level}|${excluded.answers.length}`;
+      const warmKey = `${mode.category}|${level}|${count}|${excluded.answers.length}`;
 
       try {
         let rows: SourceQuestion[] = [];
@@ -214,17 +219,19 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           rows = await warmRef.current.promise;
         }
 
-        if (rows.length === 0) {
+        if (rows.length < count) {
           setLoadProgress("Loading questions…");
-          rows = await fetchQuizRows(level, START_COUNT, excluded, true);
+          const fast = await fetchQuizRows(level, count, excluded, true);
+          if (fast.length > rows.length) rows = fast;
         }
 
-        if (rows.length === 0) {
+        if (rows.length < count) {
           setLoadProgress("Almost ready…");
-          rows = await fetchQuizRows(level, START_COUNT, excluded, false);
+          const full = await fetchQuizRows(level, count, excluded, false);
+          if (full.length > rows.length) rows = full;
         }
 
-        const prepared = prepare(rows);
+        const prepared = prepare(rows, count);
         if (prepared.length === 0) {
           setStatus("empty");
           return;
@@ -260,18 +267,6 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setPhase("playing");
         setLoadProgress("");
         setStatus("ready");
-
-        void fetchQuizRows(level, REFILL_COUNT, excluded, false)
-          .then((extra) => {
-            const more = prepare(extra);
-            if (more.length > prepared.length) {
-              setQuestions((cur) =>
-                cur.length >= more.length ? cur : more,
-              );
-            }
-            void prefetchUpcoming(more, 0, more.length, isMovie);
-          })
-          .catch(() => undefined);
       } catch {
         setStatus("error");
       }
@@ -457,7 +452,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     finishedRef.current = false;
     clearGameSession(gameKeyImage(mode.category, difficulty));
     setPaused(false);
-    void loadQuestions(difficulty, true);
+    void loadQuestions(difficulty, questionCount, true);
   }
 
   function tryResumeFromSetup() {
@@ -466,7 +461,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     if (saved?.imageQuestions?.length) {
       setPendingResume(saved);
     } else {
-      void loadQuestions(difficulty);
+      void loadQuestions(difficulty, questionCount);
     }
   }
 
@@ -475,7 +470,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     if (!restored?.length) {
       setDeclinedResume(true);
       setPendingResume(null);
-      void loadQuestions(difficulty);
+      void loadQuestions(difficulty, questionCount);
       return;
     }
     setQuestions(restored);
@@ -512,7 +507,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       <Centered>
         <span className="text-5xl">{mode.emoji}</span>
         <h2 className="font-display text-2xl font-extrabold">{mode.title}</h2>
-        <p className="font-bold text-ink/60">Choose difficulty and timer.</p>
+        <p className="font-bold text-ink/60">
+          Choose difficulty, round length, and timer.
+        </p>
         <div className="flex w-full max-w-xs flex-col gap-2">
           <span className="text-left text-xs font-extrabold uppercase tracking-wide text-ink/45">
             Difficulty
@@ -542,6 +539,10 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             </button>
           ))}
         </div>
+        <QuestionCountPicker
+          value={questionCount}
+          onChange={setQuestionCount}
+        />
         <div className="flex w-full max-w-xs flex-col gap-2">
           <span className="text-left text-xs font-extrabold uppercase tracking-wide text-ink/45">
             Timer per question
@@ -603,7 +604,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         <Button3D
           variant="grass"
           size="lg"
-          onClick={() => loadQuestions(difficulty)}
+          onClick={() => loadQuestions(difficulty, questionCount)}
         >
           Try again
         </Button3D>

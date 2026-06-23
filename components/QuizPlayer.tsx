@@ -14,9 +14,13 @@ import { flagImageFromQuery, flagQuizImageFromQuery, isFlagImageQuery } from "@/
 import {
   generateFlagQuestions,
   isFlagsQuiz,
-  FLAGS_PER_ROUND,
 } from "@/lib/flagQuiz";
 import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
+import QuestionCountPicker from "./QuestionCountPicker";
+import {
+  DEFAULT_QUESTION_COUNT,
+  type QuestionCount,
+} from "@/lib/quizRoundSettings";
 
 import { fetchQuizImage, fetchQuizImages } from "@/lib/quizImages";
 import {
@@ -112,11 +116,12 @@ function prepareTextQuestions(
 function initSession(
   quiz: Quiz,
   prefetchedImages?: Record<string, string>,
+  flagCount = DEFAULT_QUESTION_COUNT,
 ) {
   const flagsQuiz = isFlagsQuiz(quiz.id);
   const historyKey = playHistoryKey("text", quiz.id);
   const questions = flagsQuiz
-    ? generateFlagQuestions(FLAGS_PER_ROUND)
+    ? generateFlagQuestions(flagCount)
     : prepareTextQuestions(quiz, getExcluded(historyKey).ids);
   const syncFlag = flagStageUrl(questions[0]?.imageQuery ?? "");
   return {
@@ -162,10 +167,15 @@ export default function QuizPlayer({
   const router = useRouter();
   const completeGame = useCompleteGame();
   const gKey = gameKeyText(quiz.id);
-  const canResume = !isFlagsQuiz(quiz.id);
+  const needsRoundSetup = isFlagsQuiz(quiz.id);
+  const canResume = !needsRoundSetup;
   const finishedRef = useRef(false);
 
   const [ready, setReady] = useState(false);
+  const [roundConfigured, setRoundConfigured] = useState(!needsRoundSetup);
+  const [questionCount, setQuestionCount] = useState<QuestionCount>(
+    DEFAULT_QUESTION_COUNT,
+  );
   const [pendingResume, setPendingResume] = useState<SavedGameSession | null>(
     null,
   );
@@ -211,9 +221,10 @@ export default function QuizPlayer({
   }, [canResume, gKey]);
 
   useEffect(() => {
+    if (!roundConfigured) return;
     if (pendingResume && !declinedResume) return;
 
-    const next = initSession(quiz, prefetchedImages);
+    const next = initSession(quiz, prefetchedImages, questionCount);
     setSession(next);
     setQuestions(next.questions);
     setQuestionImageUrl(next.firstImageUrl);
@@ -228,7 +239,15 @@ export default function QuizPlayer({
       });
     }
     setReady(true);
-  }, [quiz, prefetchedImages, historyKey, pendingResume, declinedResume]);
+  }, [
+    quiz,
+    prefetchedImages,
+    historyKey,
+    pendingResume,
+    declinedResume,
+    roundConfigured,
+    questionCount,
+  ]);
 
   useEffect(() => {
     if (!ready || !canResume || phase === "finished" || pendingResume) return;
@@ -645,7 +664,7 @@ export default function QuizPlayer({
     clearGameSession(gKey);
     setPaused(false);
     if (flagsQuiz) {
-      const next = generateFlagQuestions(FLAGS_PER_ROUND);
+      const next = generateFlagQuestions(questionCount);
       setQuestions(next);
       setQuestionImageUrl(
         proxiedQuizImageUrl(flagStageUrl(next[0]?.imageQuery ?? "") ?? ""),
@@ -673,6 +692,32 @@ export default function QuizPlayer({
   }
 
 
+
+  if (needsRoundSetup && !roundConfigured) {
+    return (
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-6 px-4 py-10 text-center">
+        <span className="text-5xl">{quiz.emoji}</span>
+        <h2 className="font-display text-2xl font-extrabold">{quiz.title}</h2>
+        <p className="font-bold text-ink/60">
+          Pick how many flags you want — then play with purpose.
+        </p>
+        <QuestionCountPicker
+          value={questionCount}
+          onChange={setQuestionCount}
+        />
+        <Button3D
+          variant="grass"
+          size="lg"
+          onClick={() => {
+            playClick();
+            setRoundConfigured(true);
+          }}
+        >
+          ▶ Start
+        </Button3D>
+      </div>
+    );
+  }
 
   if (pendingResume && !declinedResume) {
     return (

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const category = searchParams.get("category") ?? "";
   const count = Math.min(
     Math.max(parseInt(searchParams.get("count") ?? "10", 10) || 10, 1),
-    12,
+    30,
   );
   const difficulty = normalizeDifficulty(searchParams.get("difficulty"));
   const quick = searchParams.get("quick") === "1";
