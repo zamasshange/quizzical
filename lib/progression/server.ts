@@ -9,6 +9,7 @@ import { applyWeeklyXp } from "./weekly";
 import { computeAchievementScore } from "./legend";
 import { computeKnowledgeRank } from "./ranks";
 import { computeAtlasProgress } from "./atlas";
+import { hydrateStarterUnlocks } from "./unlockCelebrations";
 import type { RawState } from "./engine";
 import type { UserDiscovery } from "./types";
 
@@ -64,7 +65,7 @@ export async function syncProfileFromClerk(
 export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscovery[]): RawState {
   const today = todayKey();
   const missionDate = (row.mission_date as string) ?? today;
-  return {
+  const raw: RawState = {
     xp: (row.xp as number) ?? 0,
     coins: (row.coins as number) ?? 0,
     currentStreak: (row.current_streak as number) ?? 0,
@@ -99,6 +100,8 @@ export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscover
     seasonXp: (row.season_xp as number) ?? 0,
     seasonDiscoveries: (row.season_discoveries as number) ?? 0,
   };
+  if ((raw.unlockedItems ?? []).length === 0) hydrateStarterUnlocks(raw);
+  return raw;
 }
 
 export async function loadUserProgress(userId: string): Promise<RawState> {

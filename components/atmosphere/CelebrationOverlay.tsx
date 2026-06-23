@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onProgressionEvent } from "@/lib/progression/client";
 import { ACHIEVEMENTS, BADGES } from "@/lib/progression/achievements";
-import { ALL_UNLOCKS } from "@/lib/progression/unlockDefinitions";
+import {
+  PROGRESSION_MILESTONE_EVENTS,
+  celebrationUnlockSummary,
+  filterCelebrationUnlocks,
+} from "@/lib/progression/unlockCelebrations";
 import { playAchievement, playCelebration, playLevelUp } from "@/lib/sound";
 import { CelebrationParticles } from "./GameParticles";
 
@@ -20,8 +24,8 @@ type Celebration = {
 };
 
 /**
- * Full-screen celebrations for rare milestones only.
- * Discoveries, missions, streaks, and XP use non-blocking toasts instead.
+ * Full-screen celebrations — only at quiz/challenge end, never mid-question.
+ * Minor unlocks (starter games, low-level worlds) are silent.
  */
 export default function CelebrationOverlay() {
   const [queue, setQueue] = useState<Celebration[]>([]);
@@ -29,6 +33,8 @@ export default function CelebrationOverlay() {
 
   useEffect(() => {
     return onProgressionEvent((result) => {
+      if (!PROGRESSION_MILESTONE_EVENTS.has(result.eventType)) return;
+
       const next: Celebration[] = [];
       let id = Date.now();
 
@@ -58,15 +64,16 @@ export default function CelebrationOverlay() {
         });
       }
 
-      for (const unlockId of result.unlocksEarned ?? []) {
+      const celebrateUnlocks = filterCelebrationUnlocks(result.unlocksEarned ?? []);
+      if (celebrateUnlocks.length > 0) {
         playCelebration();
-        const def = ALL_UNLOCKS.find((u) => u.id === unlockId);
+        const summary = celebrationUnlockSummary(celebrateUnlocks);
         next.push({
           id: id++,
           kind: "unlock",
-          title: "Unlocked!",
-          subtitle: def?.title ?? unlockId.replace(/-/g, " "),
-          emoji: def?.emoji ?? "🔓",
+          title: summary.title,
+          subtitle: summary.subtitle,
+          emoji: summary.emoji,
           accent: "bg-sky/40",
         });
       }
@@ -134,7 +141,9 @@ export default function CelebrationOverlay() {
             <h2 className="mt-3 font-display text-2xl font-black text-ink">
               {current.title}
             </h2>
-            <p className="mt-2 text-sm font-extrabold text-ink/70">{current.subtitle}</p>
+            <p className="mt-2 line-clamp-3 text-sm font-extrabold text-ink/70">
+              {current.subtitle}
+            </p>
             {current.kind === "level" && (
               <div className="mx-auto mt-4 h-2 w-32 overflow-hidden rounded-full border-2 border-ink bg-white">
                 <motion.div

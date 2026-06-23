@@ -2,6 +2,10 @@ import { categories } from "@/lib/quizzes";
 import { ACHIEVEMENTS, BADGES } from "./achievements";
 import { classifyDiscovery, generateDailyMissions } from "./missions";
 import { checkNewUnlocks } from "./unlockEngine";
+import {
+  PROGRESSION_MILESTONE_EVENTS,
+  hydrateStarterUnlocks,
+} from "./unlockCelebrations";
 import { newlyUnlockedMilestones } from "./milestones";
 import { buildFullProgressionState } from "./buildState";
 import type {
@@ -58,7 +62,7 @@ type RawState = {
 
 function defaultRaw(countryCode = DEFAULT_COUNTRY): RawState {
   const today = todayKey();
-  return {
+  const raw: RawState = {
     xp: 0,
     coins: 0,
     currentStreak: 0,
@@ -88,6 +92,8 @@ function defaultRaw(countryCode = DEFAULT_COUNTRY): RawState {
     seasonXp: 0,
     seasonDiscoveries: 0,
   };
+  hydrateStarterUnlocks(raw);
+  return raw;
 }
 
 function buildMastery(raw: RawState): CategoryMastery[] {
@@ -187,7 +193,9 @@ export function loadRawState(): RawState {
       parsed.missionDate = todayKey();
       parsed.firstQuizToday = false;
     }
-    return { ...defaultRaw(), ...parsed };
+    const merged = { ...defaultRaw(), ...parsed };
+    hydrateStarterUnlocks(merged);
+    return merged;
   } catch {
     return defaultRaw();
   }
@@ -421,7 +429,8 @@ export function applyProgressionEvent(
   );
   const milestonesUnlocked = milestonesReady.map((m) => m.id);
 
-  const { ids: unlocksEarned } = checkNewUnlocks(raw);
+  const isMilestone = PROGRESSION_MILESTONE_EVENTS.has(payload.type);
+  const unlocksEarned = isMilestone ? checkNewUnlocks(raw).ids : [];
 
   if (xpEarned > 0) raw.seasonXp = (raw.seasonXp ?? 0) + xpEarned;
   if (discovery?.isNew) raw.seasonDiscoveries = (raw.seasonDiscoveries ?? 0) + 1;
@@ -447,14 +456,15 @@ export function applyProgressionEvent(
   }
 
   return {
+    eventType: payload.type,
     xpEarned,
     coinsEarned,
-    leveledUp,
-    newLevel: leveledUp ? newLevel : undefined,
-    newTitle: leveledUp ? globalTitle(newLevel) : undefined,
+    leveledUp: isMilestone && leveledUp,
+    newLevel: isMilestone && leveledUp ? newLevel : undefined,
+    newTitle: isMilestone && leveledUp ? globalTitle(newLevel) : undefined,
     discovery,
-    achievementsUnlocked,
-    badgesUnlocked,
+    achievementsUnlocked: isMilestone ? achievementsUnlocked : [],
+    badgesUnlocked: isMilestone ? badgesUnlocked : [],
     unlocksEarned,
     streakBonus,
     missionsCompleted,

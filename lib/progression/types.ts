@@ -119,6 +119,7 @@ export type ProgressionEventPayload = {
 };
 
 export type ProgressionEventResult = {
+  eventType: ProgressionEventType;
   xpEarned: number;
   coinsEarned: number;
   leveledUp: boolean;

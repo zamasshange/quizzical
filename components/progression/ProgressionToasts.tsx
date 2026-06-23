@@ -4,10 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { onProgressionEvent } from "@/lib/progression/client";
 import type { ProgressionEventResult } from "@/lib/progression/types";
-import { ALL_UNLOCKS } from "@/lib/progression/unlockDefinitions";
 import { playMissionComplete, playStreakMilestone } from "@/lib/sound";
 
-type ToastKind = "mission" | "streak" | "unlock";
+type ToastKind = "mission" | "streak";
 
 type Toast = {
   id: number;
@@ -49,16 +48,6 @@ export default function ProgressionToasts() {
         });
       }
 
-      for (const unlockId of result.unlocksEarned ?? []) {
-        const def = ALL_UNLOCKS.find((u) => u.id === unlockId);
-        next.push({
-          id: id++,
-          kind: "unlock",
-          title: "Content unlocked",
-          detail: `${def?.emoji ?? "🔓"} ${def?.title ?? unlockId}`,
-        });
-      }
-
       if (next.length === 0) return;
 
       setToasts((t) => [...t, ...next].slice(-2));
@@ -82,17 +71,11 @@ export default function ProgressionToasts() {
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 420, damping: 30 }}
             className={`rounded-xl border-2 border-ink px-3 py-2 shadow-[0_3px_0_0_#0d0d0d] ${
-              t.kind === "mission"
-                ? "bg-lime/90"
-                : t.kind === "unlock"
-                  ? "bg-sky/30"
-                  : "bg-white"
+              t.kind === "mission" ? "bg-lime/90" : "bg-white"
             }`}
           >
             <p className="flex items-center gap-1.5 font-display text-xs font-extrabold text-ink">
-              <span aria-hidden>
-                {t.kind === "mission" ? "🎯" : t.kind === "unlock" ? "🔓" : "🔥"}
-              </span>
+              <span aria-hidden>{t.kind === "mission" ? "🎯" : "🔥"}</span>
               {t.title}
             </p>
             {t.detail && (
