@@ -10,6 +10,8 @@ type Props = {
   className?: string;
   /** Refetch via quiz-image API using this Wikipedia search term. */
   refreshTerm?: string;
+  /** Movie poster reveal — keep HD portrait sizing. */
+  posterReveal?: boolean;
 };
 
 export default function QuizStageImage({
@@ -18,14 +20,15 @@ export default function QuizStageImage({
   imageKey,
   className = "",
   refreshTerm,
+  posterReveal = false,
 }: Props) {
   const [srcIndex, setSrcIndex] = useState(0);
   const [remoteSrc, setRemoteSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   const fallbacks = [
-    ...quizImageFallbacks(src),
-    ...(remoteSrc ? quizImageFallbacks(remoteSrc) : []),
+    ...quizImageFallbacks(src, { posterReveal }),
+    ...(remoteSrc ? quizImageFallbacks(remoteSrc, { posterReveal }) : []),
   ];
   const uniqueFallbacks = [...new Set(fallbacks)];
   const currentSrc = uniqueFallbacks[srcIndex] ?? "";

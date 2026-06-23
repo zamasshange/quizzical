@@ -560,6 +560,7 @@ export async function generateImageQuizBatch(
   count = 10,
   difficulty: Difficulty = "Medium",
   exclude?: ExcludeSet,
+  options?: { cacheOnly?: boolean },
 ): Promise<GeneratedQuestion[]> {
   if (!isImageCategory(category)) return [];
 
@@ -622,6 +623,8 @@ export async function generateImageQuizBatch(
   }
 
   if (results.length >= count) return results.slice(0, count);
+
+  if (options?.cacheOnly) return results;
 
   // Slow path — generate any remaining questions (parallel, capped).
   const { entries, distractors: liveDistractors } = await workingEntries(

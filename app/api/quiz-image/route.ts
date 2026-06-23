@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { flagImageFromQuery } from "@/lib/countryData";
+import { flagImageFromQuery, flagQuizImageFromQuery } from "@/lib/countryData";
 import { proxiedQuizImageUrl } from "@/lib/quizImageUrl";
 import { fetchWikipediaSummaryWithFallback } from "@/lib/wikipedia";
 
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     return NextResponse.json(memory.get(term));
   }
 
-  const flagUrl = flagImageFromQuery(term);
+  const flagUrl = flagQuizImageFromQuery(term) ?? flagImageFromQuery(term);
   if (flagUrl) {
     const result: QuizImageResponse = {
       image_url: proxiedQuizImageUrl(flagUrl),

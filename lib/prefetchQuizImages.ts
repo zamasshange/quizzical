@@ -1,6 +1,6 @@
 import type { Quiz } from "./quizzes";
 import { usesQuestionImages } from "./quizzes";
-import { flagImageFromQuery } from "./countryData";
+import { flagImageFromQuery, flagQuizImageFromQuery } from "./countryData";
 import { proxiedQuizImageUrl } from "./quizImageUrl";
 import { fetchWikipediaSummaryWithFallback } from "./wikipedia";
 
@@ -20,7 +20,7 @@ export async function prefetchQuestionImages(
 
   const entries = await Promise.all(
     queries.map(async (query) => {
-      const flagUrl = flagImageFromQuery(query);
+      const flagUrl = flagQuizImageFromQuery(query) ?? flagImageFromQuery(query);
       if (flagUrl) return [query, proxiedQuizImageUrl(flagUrl)] as const;
       const summary = await fetchWikipediaSummaryWithFallback(query);
       return [

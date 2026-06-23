@@ -134,13 +134,22 @@ export function parseFlagQuery(query: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Self-hosted flag PNG in /public/flags. */
+/** Self-hosted flag PNG in /public/flags (small UI badges). */
 export function flagImageFromQuery(query: string, _width = 640): string | null {
   const country = parseFlagQuery(query);
   if (!country) return null;
   const iso2 = lookupCountryIso(country);
   if (!iso2) return null;
   return flagUrlFromIso2(iso2);
+}
+
+/** High-resolution flag for quiz stage (Flags of the World). */
+export function flagQuizImageFromQuery(query: string, width = 1280): string | null {
+  const country = parseFlagQuery(query);
+  if (!country) return null;
+  const iso2 = lookupCountryIso(country);
+  if (!iso2) return null;
+  return `https://flagcdn.com/w${width}/${iso2}.png`;
 }
 
 export function isFlagImageQuery(query?: string): boolean {

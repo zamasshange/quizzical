@@ -34,6 +34,7 @@ import type { GameMode } from "@/lib/imageQuestions";
 import {
   prefetchImages,
   prefetchUpcoming,
+  questionPrefetchUrls,
 } from "@/lib/quizImageUrl";
 
 type SourceQuestion = {
@@ -61,6 +62,8 @@ type TimerSeconds = (typeof TIMER_OPTIONS)[number];
 const DEFAULT_TIMER: TimerSeconds = 20;
 const MAX_POINTS = 1000;
 const MAX_QUESTIONS = 10;
+const QUICK_START_COUNT = 5;
+const FULL_BATCH_COUNT = 10;
 
 type Phase = "playing" | "reveal" | "finished";
 type Status = "setup" | "loading" | "ready" | "empty" | "error";
@@ -138,42 +141,74 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       const historyKey = playHistoryKey("image", mode.category, level);
       if (rotate) rotateExcluded(historyKey);
       const excluded = getExcluded(historyKey);
+      const isMovie = mode.category === "Movie";
 
-      try {
+      const buildParams = (count: string, quick: boolean) => {
         const params = new URLSearchParams({
           category: mode.category,
-          count: "10",
+          count,
           difficulty: level,
         });
+        if (quick) params.set("quick", "1");
         for (const answer of excluded.answers) {
           params.append("excludeAnswer", answer);
         }
         for (const image of excluded.images) {
           params.append("excludeImage", image);
         }
+        return params;
+      };
 
-        const res = await fetch(`/api/image-quiz?${params.toString()}`, {
-          cache: "no-store",
-        });
+      try {
+        let res = await fetch(
+          `/api/image-quiz?${buildParams(String(QUICK_START_COUNT), true)}`,
+          { cache: "no-store" },
+        );
         if (!res.ok) throw new Error("Request failed");
-        const data: { questions: SourceQuestion[] } = await res.json();
-        const prepared = prepare(data.questions ?? []);
+        let data = (await res.json()) as { questions: SourceQuestion[] };
+        let prepared = prepare(data.questions ?? []);
+
+        if (prepared.length < 3) {
+          setLoadProgress("Fetching more questions…");
+          res = await fetch(
+            `/api/image-quiz?${buildParams(String(FULL_BATCH_COUNT), false)}`,
+            { cache: "no-store" },
+          );
+          if (!res.ok) throw new Error("Request failed");
+          data = (await res.json()) as { questions: SourceQuestion[] };
+          prepared = prepare(data.questions ?? []);
+        } else {
+          void fetch(
+            `/api/image-quiz?${buildParams(String(FULL_BATCH_COUNT), false)}`,
+            { cache: "no-store" },
+          )
+            .then((r) => (r.ok ? r.json() : null))
+            .then((extra: { questions?: SourceQuestion[] } | null) => {
+              const more = prepare(extra?.questions ?? []);
+              if (more.length > prepared.length) {
+                setQuestions((cur) =>
+                  cur.length >= more.length ? cur : more,
+                );
+              }
+            })
+            .catch(() => undefined);
+        }
+
         if (prepared.length === 0) {
           setStatus("empty");
           return;
         }
 
-        setLoadProgress("Loading images…");
-        const allUrls = prepared.flatMap((q) =>
-          [q.image_url, q.reveal_image_url].filter((u): u is string => !!u),
+        setLoadProgress("Loading first image…");
+        const first = prepared[0];
+        await prefetchImages(
+          questionPrefetchUrls(
+            first.image_url,
+            first.reveal_image_url,
+            isMovie,
+          ),
         );
-        const firstUrls = prepared
-          .slice(0, 3)
-          .flatMap((q) =>
-            [q.image_url, q.reveal_image_url].filter((u): u is string => !!u),
-          );
-        await prefetchImages(firstUrls);
-        void prefetchImages(allUrls);
+        void prefetchUpcoming(prepared, 0, 3, isMovie);
 
         recordSeen(historyKey, {
           answers: prepared.map((q) => q.answers[q.correct]),
@@ -240,7 +275,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   useEffect(() => {
     if (status !== "ready" || questions.length === 0) return;
-    prefetchUpcoming(questions, index + 1, 3);
+    prefetchUpcoming(questions, index + 1, 3, mode.category === "Movie");
     const current = questions[index];
     const next = questions[index + 1];
     if (current?.answers[current.correct]) {
@@ -607,10 +642,11 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   const revealed = phase === "reveal";
   const showReveal = revealed && !!question.reveal_image_url;
+  const isMovieMode = mode.category === "Movie";
+  const isPosterReveal = showReveal && isMovieMode;
   const stageSrc = showReveal
     ? (question.reveal_image_url as string)
     : question.image_url;
-  const isMovieMode = mode.category === "Movie";
   const lowTime = timeLeft <= Math.max(3, Math.floor(timerSeconds * 0.25));
   const timerFrac = Math.max(0, timeLeft / timerSeconds);
   const revealStatus =
@@ -709,8 +745,8 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         {/* Image — swaps to the reveal image (e.g. the poster) once locked in */}
         <div
           className={`relative w-full overflow-hidden rounded-3xl border-4 border-ink bg-ink shadow-[0_6px_0_0_#0d0d0d] ${
-            revealed
-              ? "max-md:max-h-[min(36vh,220px)] max-md:aspect-auto aspect-[16/10]"
+            isPosterReveal
+              ? "mx-auto aspect-[2/3] max-h-[min(70vh,560px)] max-w-sm"
               : "aspect-[16/10]"
           }`}
         >
@@ -718,6 +754,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
             src={stageSrc}
             alt={showReveal ? "Answer reveal" : "Guess from this image"}
             imageKey={`${question.id}-${showReveal ? "reveal" : "main"}`}
+            posterReveal={isPosterReveal}
             refreshTerm={
               showReveal ? undefined : question.answers[question.correct]
             }

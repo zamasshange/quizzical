@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     12,
   );
   const difficulty = normalizeDifficulty(searchParams.get("difficulty"));
+  const quick = searchParams.get("quick") === "1";
   const excludeAnswers = searchParams.getAll("excludeAnswer");
   const excludeImages = searchParams.getAll("excludeImage");
 
@@ -48,6 +49,6 @@ export async function GET(request: Request) {
   const questions = await generateImageQuizBatch(category, count, difficulty, {
     answers: mergedAnswers,
     images: excludeImages,
-  });
+  }, { cacheOnly: quick });
   return NextResponse.json({ questions });
 }

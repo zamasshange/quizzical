@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import type { Quiz } from "@/lib/quizzes";
 import { getQuizProfile, getRevealCategory } from "@/lib/quizProfiles";
 import { usesAnswerImages, usesQuestionImages } from "@/lib/quizzes";
-import { flagImageFromQuery, isFlagImageQuery } from "@/lib/countryData";
+import { flagImageFromQuery, flagQuizImageFromQuery, isFlagImageQuery } from "@/lib/countryData";
 import {
   generateFlagQuestions,
   isFlagsQuiz,
@@ -71,6 +71,11 @@ const QUESTION_SECONDS = 20;
 
 const MAX_POINTS = 1000;
 
+function flagStageUrl(query: string | undefined): string | null {
+  if (!query) return null;
+  return flagQuizImageFromQuery(query) ?? flagImageFromQuery(query);
+}
+
 
 
 type Phase = "playing" | "reveal" | "finished";
@@ -113,7 +118,7 @@ function initSession(
   const questions = flagsQuiz
     ? generateFlagQuestions(FLAGS_PER_ROUND)
     : prepareTextQuestions(quiz, getExcluded(historyKey).ids);
-  const syncFlag = flagImageFromQuery(questions[0]?.imageQuery ?? "");
+  const syncFlag = flagStageUrl(questions[0]?.imageQuery ?? "");
   return {
     flagsQuiz,
     questions,
@@ -437,7 +442,7 @@ export default function QuizPlayer({
       current.imageQuery,
     );
 
-    const syncFlag = flagImageFromQuery(current.imageQuery ?? "");
+    const syncFlag = flagStageUrl(current.imageQuery ?? "");
 
 
 
@@ -573,7 +578,7 @@ export default function QuizPlayer({
 
     for (const q of questions) {
 
-      const url = flagImageFromQuery(q.imageQuery ?? "");
+      const url = flagStageUrl(q.imageQuery ?? "");
 
       if (url) {
 
@@ -643,7 +648,7 @@ export default function QuizPlayer({
       const next = generateFlagQuestions(FLAGS_PER_ROUND);
       setQuestions(next);
       setQuestionImageUrl(
-        proxiedQuizImageUrl(flagImageFromQuery(next[0]?.imageQuery ?? "") ?? ""),
+        proxiedQuizImageUrl(flagStageUrl(next[0]?.imageQuery ?? "") ?? ""),
       );
     } else {
       rotateExcluded(historyKey);
@@ -711,7 +716,7 @@ export default function QuizPlayer({
   const isFlagQuestion = isFlagImageQuery(question.imageQuery);
 
   const syncFlagUrl = isFlagQuestion
-    ? proxiedQuizImageUrl(flagImageFromQuery(question.imageQuery!) ?? "")
+    ? proxiedQuizImageUrl(flagStageUrl(question.imageQuery!) ?? "")
     : null;
 
   const displayQuestionImageUrl = syncFlagUrl ?? questionImageUrl;
@@ -1073,7 +1078,8 @@ export default function QuizPlayer({
                     alt="Country flag"
                     loading="eager"
                     decoding="sync"
-                    className="block h-44 w-auto md:h-52"
+                    className="block h-auto max-h-56 w-auto max-w-full md:max-h-64"
+                    style={{ imageRendering: "auto" }}
                   />
                 ) : (
                   <div className="flex h-44 w-64 items-center justify-center bg-cream-dark">
