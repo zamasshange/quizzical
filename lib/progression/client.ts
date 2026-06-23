@@ -6,8 +6,8 @@ import {
   applyProgressionEvent,
   getDefaultProgressionState,
   loadRawState,
-  toProgressionState,
 } from "./engine";
+import { buildFullProgressionState } from "./buildState";
 import type {
   ProgressionEventPayload,
   ProgressionEventResult,
@@ -48,7 +48,7 @@ export function useProgression() {
         /* fall through */
       }
     }
-    setState(toProgressionState(loadRawState()));
+    setState(buildFullProgressionState(loadRawState()));
     setLoaded(true);
   }, [isSignedIn]);
 

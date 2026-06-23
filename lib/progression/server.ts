@@ -6,6 +6,9 @@ import { generateDailyMissions } from "./missions";
 import { resolveClerkIdentity } from "./resolveClerkIdentity";
 import { levelFromXp, todayKey } from "./xp";
 import { applyWeeklyXp } from "./weekly";
+import { computeAchievementScore } from "./legend";
+import { computeKnowledgeRank } from "./ranks";
+import { computeAtlasProgress } from "./atlas";
 import type { RawState } from "./engine";
 import type { UserDiscovery } from "./types";
 
@@ -84,6 +87,17 @@ export function rowToRaw(row: Record<string, unknown>, discoveries: UserDiscover
       perfectQuizzes: 0,
     },
     firstQuizToday: (row.first_quiz_today as boolean) ?? false,
+    unlockedItems: (row.unlocked_items as string[]) ?? [],
+    kingdomId: (row.kingdom_id as string) ?? null,
+    loginStreak: (row.login_streak as number) ?? 0,
+    lastLoginDate: (row.last_login_date as string) ?? null,
+    dailyRewardClaimedDate: (row.daily_reward_claimed_date as string) ?? null,
+    claimedDiscoveryMilestones: (row.claimed_discovery_milestones as string[]) ?? [],
+    isLegend: (row.is_legend as boolean) ?? false,
+    legendNumber: (row.legend_number as number) ?? undefined,
+    crownedAt: (row.crowned_at as string) ?? undefined,
+    seasonXp: (row.season_xp as number) ?? 0,
+    seasonDiscoveries: (row.season_discoveries as number) ?? 0,
   };
 }
 
@@ -140,6 +154,15 @@ export async function persistProgress(
     xpDelta,
   );
 
+  const level = levelFromXp(raw.xp);
+  const atlas = computeAtlasProgress(raw.discoveries);
+  const achievementScore = computeAchievementScore(
+    raw.unlockedAchievements,
+    raw.unlockedBadges,
+    raw.stats.perfectQuizzes,
+  );
+  const knowledgeRank = computeKnowledgeRank(level, raw.discoveries.length, raw.isLegend);
+
   await sb.from("user_progress").upsert(
     {
       user_id: userId,
@@ -147,7 +170,7 @@ export async function persistProgress(
       avatar_id: avatarId,
       xp: raw.xp,
       coins: raw.coins,
-      level: levelFromXp(raw.xp),
+      level,
       weekly_xp: weekly.weeklyXp,
       week_started_at: weekly.weekStartedAt,
       current_streak: raw.currentStreak,
@@ -163,6 +186,20 @@ export async function persistProgress(
       mission_date: raw.missionDate,
       stats: raw.stats,
       first_quiz_today: raw.firstQuizToday,
+      unlocked_items: raw.unlockedItems ?? [],
+      kingdom_id: raw.kingdomId,
+      login_streak: raw.loginStreak,
+      last_login_date: raw.lastLoginDate,
+      daily_reward_claimed_date: raw.dailyRewardClaimedDate,
+      claimed_discovery_milestones: raw.claimedDiscoveryMilestones ?? [],
+      atlas_completion_pct: atlas.overallPct,
+      achievement_score: achievementScore,
+      knowledge_rank: knowledgeRank.title,
+      season_xp: raw.seasonXp ?? 0,
+      season_discoveries: raw.seasonDiscoveries ?? 0,
+      is_legend: raw.isLegend,
+      legend_number: raw.legendNumber ?? null,
+      crowned_at: raw.crownedAt ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },

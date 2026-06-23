@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import QuizPlayer from "@/components/QuizPlayer";
+import UnlockGate from "@/components/progression/UnlockGate";
 import { getQuiz, quizzes } from "@/lib/quizzes";
 import { isFlagsQuiz } from "@/lib/flagQuiz";
 import { prefetchQuestionImages } from "@/lib/prefetchQuizImages";
@@ -35,7 +36,9 @@ export default async function PlayPage(props: PageProps<"/quiz/[id]/play">) {
   return (
     <SiteShell showCategories={false} showFooter={false}>
       <div className="pt-4">
-        <QuizPlayer quiz={quiz} prefetchedImages={prefetchedImages} />
+        <UnlockGate href={`/quiz/${quiz.id}`}>
+          <QuizPlayer quiz={quiz} prefetchedImages={prefetchedImages} />
+        </UnlockGate>
       </div>
     </SiteShell>
   );

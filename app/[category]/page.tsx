@@ -23,6 +23,7 @@ import {
 } from "@/lib/seoStructuredData";
 import SeoInternalLinks from "@/components/seo/SeoInternalLinks";
 import CategoryBanner from "@/components/atmosphere/CategoryBanner";
+import CategoryWorldBanner from "@/components/progression/CategoryWorldBanner";
 
 export function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
@@ -90,6 +91,8 @@ export default async function CategoryPage(props: PageProps<"/[category]">) {
           quizCount={own.length}
           pictureCount={pictureGames.length}
         />
+
+        <CategoryWorldBanner categorySlug={found.slug} categoryName={found.name} />
 
         {/* Real, working category filter chips */}
         <div className="mt-5">

@@ -8,6 +8,9 @@ import { xpToNextLevel } from "@/lib/progression/xp";
 import AppIcon, { type AppIconName } from "@/components/icons/AppIcon";
 import CountryFlag from "@/components/CountryFlag";
 import { getCountry } from "@/lib/progression/countries";
+import NextUnlockWidget from "./NextUnlockWidget";
+import DailyRewardWidget from "./DailyRewardWidget";
+import KingdomPicker from "./KingdomPicker";
 
 export default function ExplorerHub() {
   const { state, loaded } = useProgression();
@@ -28,10 +31,10 @@ export default function ExplorerHub() {
           </p>
         </div>
         <Link
-          href="/knowledge-book"
+          href="/knowledge-atlas"
           className="text-sm font-extrabold text-grass hover:underline"
         >
-          My Knowledge Book →
+          World Knowledge Atlas →
         </Link>
       </div>
 
@@ -47,8 +50,10 @@ export default function ExplorerHub() {
                 Knowledge Explorer
               </p>
               <p className="font-display text-2xl font-black text-ink">
-                Level {state.level}{" "}
-                <span className="text-lg font-extrabold text-grass">{state.title}</span>
+                {state.knowledgeRankEmoji ?? "🧭"} Level {state.level}{" "}
+                <span className="text-lg font-extrabold text-grass">
+                  {state.knowledgeRank ?? state.title}
+                </span>
               </p>
               {country && (
                 <p className="mt-0.5 flex items-center gap-2 text-sm font-bold text-ink/55">
@@ -94,11 +99,33 @@ export default function ExplorerHub() {
         />
         <StatCard
           icon="telescope"
-          label="Discoveries"
-          value={String(state.discoveryCount)}
-          sub="Collected knowledge"
+          label="Atlas"
+          value={`${state.atlas?.overallPct ?? 0}%`}
+          sub={`${state.discoveryCount} discoveries`}
           floatDelay={0.2}
         />
+
+        {state.season && (
+          <StatCard
+            icon="trophy"
+            label={state.season.title}
+            value={`${state.season.daysRemaining}d left`}
+            sub="Season XP race"
+            floatDelay={0.25}
+          />
+        )}
+
+        <div className="sm:col-span-2">
+          <DailyRewardWidget />
+        </div>
+
+        <div className="sm:col-span-2">
+          <KingdomPicker />
+        </div>
+
+        <div className="sm:col-span-2">
+          <NextUnlockWidget />
+        </div>
 
         {topMission && (
           <div className="rounded-2xl border-4 border-ink bg-lime/25 p-4 shadow-[0_4px_0_0_#0d0d0d] sm:col-span-2">

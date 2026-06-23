@@ -25,5 +25,14 @@ export function createEmptyRaw(countryCode = DEFAULT_COUNTRY): RawState {
       perfectQuizzes: 0,
     },
     firstQuizToday: false,
+    unlockedItems: [],
+    kingdomId: null,
+    loginStreak: 0,
+    lastLoginDate: null,
+    dailyRewardClaimedDate: null,
+    claimedDiscoveryMilestones: [],
+    isLegend: false,
+    seasonXp: 0,
+    seasonDiscoveries: 0,
   };
 }

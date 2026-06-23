@@ -71,10 +71,21 @@ export function activityFromProgression(input: {
   quizCategory?: string;
   leveledUp?: boolean;
   newLevel?: number;
+  newRank?: string;
   badgesUnlocked?: string[];
+  unlocksEarned?: string[];
   missionsCompleted?: { label: string; emoji: string }[];
   discovery?: { term: string; isNew: boolean };
+  becameLegend?: boolean;
+  legendNumber?: number;
 }): { message: string; emoji: string; eventKind: string } | null {
+  if (input.becameLegend) {
+    return {
+      eventKind: "knowledge_legend",
+      emoji: "👑",
+      message: `${input.username} became Knowledge Legend #${input.legendNumber ?? "?"}`,
+    };
+  }
   if (input.leveledUp && input.newLevel) {
     return {
       eventKind: "level_up",

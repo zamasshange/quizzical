@@ -13,9 +13,10 @@ import { xpToNextLevel } from "@/lib/progression/xp";
 import { categories, quizzes } from "@/lib/quizzes";
 
 const TAGLINES = [
-  "Become a Knowledge Explorer.",
-  "Learn. Discover. Level Up.",
+  "Build your legacy as a Knowledge Explorer.",
+  "Complete the Atlas. Win Seasons. Enter the Hall of Fame.",
   "Every answer unlocks something new.",
+  "Become a Knowledge Legend.",
 ];
 
 const TRENDING = [
@@ -44,9 +45,16 @@ export default function DynamicHomeHero() {
                 100% free · no sign-up
               </span>
               {loaded && (
+                <>
                 <span className="hidden rounded-full border-2 border-cream/25 bg-white/10 px-3 py-1 text-xs font-extrabold text-cream/80 sm:inline-flex">
-                  Lv.{state.level} · {state.xp.toLocaleString()} XP · 🔥 {state.currentStreak}d
+                  {state.knowledgeRankEmoji} {state.knowledgeRank ?? state.title} · Lv.{state.level} · 🔥 {state.currentStreak}d
                 </span>
+                {state.atlas && (
+                  <span className="hidden rounded-full border-2 border-cream/25 bg-white/10 px-3 py-1 text-xs font-extrabold text-cream/80 lg:inline-flex">
+                    🗺️ Atlas {state.atlas.overallPct}%
+                  </span>
+                )}
+                </>
               )}
             </div>
 
@@ -69,7 +77,7 @@ export default function DynamicHomeHero() {
             )}
 
             <p className="hidden max-w-md text-sm font-bold text-cream/70 sm:block md:text-base">
-              Hundreds of free quiz games — play instantly, learn after every answer.
+              Discover the world, compete globally, unlock achievements, and earn your place in the Hall of Fame.
             </p>
 
             <div className="w-full max-w-lg">

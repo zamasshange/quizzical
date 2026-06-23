@@ -9,6 +9,8 @@ import { quizImageFallbacks } from "@/lib/quizImageUrl";
 import ContainedPhoto from "@/components/media/ContainedPhoto";
 import { prefetchReveal } from "@/lib/revealPrefetch";
 import { cardHover, defaultTransition, fadeUp } from "@/lib/motion";
+import { useUnlockForHref } from "@/lib/progression/unlockClient";
+import LockedContentPreview from "@/components/progression/LockedContentPreview";
 
 const thumbCache = new Map<string, string | null>();
 
@@ -59,6 +61,8 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
     return cached === undefined || !cached;
   });
   const [hover, setHover] = useState(false);
+  const href = `/quiz/${quiz.id}`;
+  const { unlock, locked } = useUnlockForHref(href);
 
   const thumbSources = thumbUrl ? quizImageFallbacks(thumbUrl) : [];
   const activeSrc = thumbSources[srcIndex] ?? "";
@@ -96,7 +100,7 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
     setThumbUrl(null);
   }
 
-  return (
+  const card = (
     <motion.div
       variants={fadeUp}
       initial="hidden"
@@ -115,7 +119,7 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
       }}
       onHoverEnd={() => setHover(false)}
     >
-      <Link href={`/quiz/${quiz.id}`} className="group flex flex-col">
+      <Link href={href} className="group flex flex-col">
         <motion.div
           className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d]"
           style={{ backgroundColor: quiz.color }}
@@ -125,6 +129,11 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
           whileTap="tap"
           transition={defaultTransition}
         >
+          {locked && (
+            <span className="absolute right-2 top-2 z-30 rounded-full border-2 border-ink bg-white px-2 py-0.5 text-[10px] font-extrabold">
+              🔒
+            </span>
+          )}
           {activeSrc ? (
             <>
               <ContainedPhoto
@@ -181,4 +190,10 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
       </Link>
     </motion.div>
   );
+
+  if (locked && unlock) {
+    return <LockedContentPreview unlock={unlock}>{card}</LockedContentPreview>;
+  }
+
+  return card;
 }

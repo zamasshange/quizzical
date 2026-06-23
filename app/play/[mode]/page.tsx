@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteShell from "@/components/SiteShell";
 import ImageQuizPlayer from "@/components/ImageQuizPlayer";
+import UnlockGate from "@/components/progression/UnlockGate";
 import { IMAGE_GAME_MODES, getGameModeBySlug } from "@/lib/imageQuestions";
 import JsonLd from "@/components/JsonLd";
 import { imageGameMetadata } from "@/lib/seo";
@@ -51,7 +52,9 @@ export default async function ImageGamePage(props: PageProps<"/play/[mode]">) {
             {game.title}
           </h1>
         </div>
+        <UnlockGate href={`/play/${game.slug}`}>
         <ImageQuizPlayer mode={game} />
+        </UnlockGate>
       </div>
     </SiteShell>
   );

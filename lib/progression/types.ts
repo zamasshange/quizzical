@@ -88,6 +88,22 @@ export type ProgressionState = {
     perfectQuizzes: number;
   };
   rank?: number;
+  /** Extended unlock & progression fields */
+  knowledgeRank?: string;
+  knowledgeRankId?: string;
+  knowledgeRankTier?: number;
+  knowledgeRankEmoji?: string;
+  achievementScore?: number;
+  atlas?: import("./atlas").AtlasSummary;
+  legend?: import("./legend").LegendStatus;
+  kingdom?: { id: string; name: string; emoji: string; color: string } | null;
+  season?: import("./seasons").SeasonInfo;
+  dailyReward?: import("./dailyRewards").DailyRewardStatus;
+  loginStreak?: number;
+  unlocks?: import("./unlockEngine").UnlockProgress[];
+  nextUnlock?: import("./unlockEngine").NextUnlock | null;
+  discoveryMilestones?: import("./milestones").MilestoneView[];
+  unlockedItemIds?: string[];
 };
 
 export type ProgressionEventPayload = {
@@ -111,10 +127,15 @@ export type ProgressionEventResult = {
   discovery?: UserDiscovery & { isNew: boolean };
   achievementsUnlocked: string[];
   badgesUnlocked: string[];
+  unlocksEarned: string[];
   streakBonus: number;
   /** Missions that just reached their target this event. */
   missionsCompleted: { id: string; label: string; emoji: string }[];
   /** Streak day count when a milestone (3, 7, 14, 30…) was hit. */
   streakMilestone?: number;
+  /** Discovery milestones ready to claim */
+  milestonesUnlocked: string[];
+  becameLegend?: boolean;
+  legendNumber?: number;
   state: ProgressionState;
 };

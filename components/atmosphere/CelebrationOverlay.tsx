@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onProgressionEvent } from "@/lib/progression/client";
 import { ACHIEVEMENTS, BADGES } from "@/lib/progression/achievements";
+import { ALL_UNLOCKS } from "@/lib/progression/unlockDefinitions";
 import { playAchievement, playCelebration, playLevelUp } from "@/lib/sound";
 import { CelebrationParticles } from "./GameParticles";
 
-type CelebrationKind = "level" | "achievement" | "badge";
+type CelebrationKind = "level" | "achievement" | "badge" | "unlock" | "legend";
 
 type Celebration = {
   id: number;
@@ -57,6 +58,19 @@ export default function CelebrationOverlay() {
         });
       }
 
+      for (const unlockId of result.unlocksEarned ?? []) {
+        playCelebration();
+        const def = ALL_UNLOCKS.find((u) => u.id === unlockId);
+        next.push({
+          id: id++,
+          kind: "unlock",
+          title: "Unlocked!",
+          subtitle: def?.title ?? unlockId.replace(/-/g, " "),
+          emoji: def?.emoji ?? "🔓",
+          accent: "bg-sky/40",
+        });
+      }
+
       if (result.leveledUp && result.newLevel) {
         playLevelUp();
         playCelebration();
@@ -67,6 +81,18 @@ export default function CelebrationOverlay() {
           subtitle: result.newTitle ?? "Knowledge Explorer",
           emoji: "⬆️",
           accent: "bg-gradient-to-br from-lime via-sky/80 to-grass/30",
+        });
+      }
+
+      if (result.becameLegend) {
+        playCelebration();
+        next.push({
+          id: id++,
+          kind: "legend",
+          title: "Knowledge Legend",
+          subtitle: `You are Legend #${result.legendNumber ?? "?"}`,
+          emoji: "👑",
+          accent: "bg-gradient-to-br from-sun via-white to-sun/40",
         });
       }
 
@@ -118,6 +144,11 @@ export default function CelebrationOverlay() {
                   transition={{ duration: 1.1, ease: "easeOut" }}
                 />
               </div>
+            )}
+            {current.kind === "legend" && (
+              <p className="mt-3 text-xs font-extrabold uppercase tracking-wide text-ink/50">
+                Permanent Hall of Fame entry
+              </p>
             )}
           </motion.div>
         </motion.div>

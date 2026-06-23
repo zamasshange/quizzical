@@ -1,6 +1,9 @@
 import { categories } from "@/lib/quizzes";
 import { ACHIEVEMENTS, BADGES } from "./achievements";
 import { classifyDiscovery, generateDailyMissions } from "./missions";
+import { checkNewUnlocks } from "./unlockEngine";
+import { newlyUnlockedMilestones } from "./milestones";
+import { buildFullProgressionState } from "./buildState";
 import type {
   CategoryMastery,
   DailyMission,
@@ -39,6 +42,18 @@ type RawState = {
   missionDate: string;
   stats: ProgressionState["stats"];
   firstQuizToday: boolean;
+  unlockedItems: string[];
+  kingdomId: string | null;
+  loginStreak: number;
+  lastLoginDate: string | null;
+  dailyRewardClaimedDate: string | null;
+  claimedDiscoveryMilestones: string[];
+  isLegend: boolean;
+  legendNumber?: number;
+  crownedAt?: string;
+  seasonXp: number;
+  seasonDiscoveries: number;
+  season?: import("./seasons").SeasonInfo;
 };
 
 function defaultRaw(countryCode = DEFAULT_COUNTRY): RawState {
@@ -63,6 +78,15 @@ function defaultRaw(countryCode = DEFAULT_COUNTRY): RawState {
       perfectQuizzes: 0,
     },
     firstQuizToday: false,
+    unlockedItems: [],
+    kingdomId: null,
+    loginStreak: 0,
+    lastLoginDate: null,
+    dailyRewardClaimedDate: null,
+    claimedDiscoveryMilestones: [],
+    isLegend: false,
+    seasonXp: 0,
+    seasonDiscoveries: 0,
   };
 }
 
@@ -249,6 +273,7 @@ function checkBadges(raw: RawState): string[] {
   tryUnlock("streak-master", raw.longestStreak >= 30);
   tryUnlock("world-traveler", raw.unlockedAchievements.includes("world-traveler"));
   tryUnlock("movie-buff", raw.unlockedAchievements.includes("movie-buff"));
+  tryUnlock("music-master", raw.unlockedAchievements.includes("music-master"));
 
   const sports = raw.mastery.sports;
   if (sports && sports.answered > 0) {
@@ -371,6 +396,15 @@ export function applyProgressionEvent(
     }
   }
 
+  for (const done of missionsCompleted) {
+    const mission = raw.missions.find((m) => m.id === done.id);
+    if (mission?.completed && !mission.claimed) {
+      xpEarned += mission.rewardXp;
+      coinsEarned += mission.rewardCoins;
+      mission.claimed = true;
+    }
+  }
+
   streakBonus = streakBonusXp(raw.currentStreak);
   xpEarned += streakBonus;
   if (raw.currentStreak > 1) coinsEarned += COINS.streakDay;
@@ -380,6 +414,30 @@ export function applyProgressionEvent(
 
   const achievementsUnlocked = checkAchievements(raw);
   const badgesUnlocked = checkBadges(raw);
+
+  const milestonesReady = newlyUnlockedMilestones(
+    raw.discoveries.length,
+    raw.claimedDiscoveryMilestones ?? [],
+  );
+  const milestonesUnlocked = milestonesReady.map((m) => m.id);
+
+  const { ids: unlocksEarned } = checkNewUnlocks(raw);
+
+  if (xpEarned > 0) raw.seasonXp = (raw.seasonXp ?? 0) + xpEarned;
+  if (discovery?.isNew) raw.seasonDiscoveries = (raw.seasonDiscoveries ?? 0) + 1;
+
+  let becameLegend = false;
+  let legendNumber: number | undefined;
+  if (!raw.isLegend) {
+    const full = buildFullProgressionState(raw);
+    if (full.legend?.eligible) {
+      raw.isLegend = true;
+      raw.legendNumber = 1;
+      raw.crownedAt = new Date().toISOString();
+      becameLegend = true;
+      legendNumber = 1;
+    }
+  }
 
   const newLevel = levelFromXp(raw.xp);
   const leveledUp = newLevel > prevLevel;
@@ -397,15 +455,19 @@ export function applyProgressionEvent(
     discovery,
     achievementsUnlocked,
     badgesUnlocked,
+    unlocksEarned,
     streakBonus,
     missionsCompleted,
     streakMilestone,
-    state: toProgressionState(raw),
+    milestonesUnlocked,
+    becameLegend: becameLegend || undefined,
+    legendNumber,
+    state: buildFullProgressionState(raw),
   };
 }
 
 export function getDefaultProgressionState(countryCode?: string): ProgressionState {
-  return toProgressionState(defaultRaw(countryCode));
+  return buildFullProgressionState(defaultRaw(countryCode));
 }
 
 export { xpToNextLevel, STORAGE_KEY };

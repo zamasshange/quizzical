@@ -7,6 +7,8 @@ import AppIcon, { type AppIconName } from "@/components/icons/AppIcon";
 import ContainedPhoto from "@/components/media/ContainedPhoto";
 import type { GameMode } from "@/lib/imageQuestions";
 import { fadeUp, sectionViewport, staggerContainer } from "@/lib/motion";
+import { useUnlockForHref } from "@/lib/progression/unlockClient";
+import LockedContentPreview from "@/components/progression/LockedContentPreview";
 
 const MODE_ICONS: Record<string, AppIconName> = {
   celebrity: "movie",
@@ -75,10 +77,12 @@ function PictureCard({
   const label = shortTitle(mode.title);
   const group =
     mode.quizCategorySlug === "sports" ? "Sports" : "Entertainment";
+  const href = `/play/${mode.slug}`;
+  const { unlock, locked } = useUnlockForHref(href);
 
-  return (
+  const card = (
     <Link
-      href={`/play/${mode.slug}`}
+      href={href}
       className={
         fill
           ? "group block w-full min-w-0"
@@ -86,6 +90,11 @@ function PictureCard({
       }
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
+        {locked && (
+          <span className="absolute right-1.5 top-1.5 z-30 rounded-full border-2 border-ink bg-white px-1.5 py-0.5 text-[9px] font-extrabold">
+            🔒 Lv.{unlock?.requirements.find((r) => r.label.startsWith("Reach"))?.required ?? "?"}
+          </span>
+        )}
         {previewUrl ? (
           <ContainedPhoto
             src={previewUrl}
@@ -116,6 +125,12 @@ function PictureCard({
       </div>
     </Link>
   );
+
+  if (locked && unlock) {
+    return <LockedContentPreview unlock={unlock}>{card}</LockedContentPreview>;
+  }
+
+  return card;
 }
 
 function MobileFilmStrip({ modes }: { modes: GameMode[] }) {

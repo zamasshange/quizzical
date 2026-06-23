@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { toProgressionState } from "@/lib/progression/engine";
+import { buildFullProgressionState } from "@/lib/progression/buildState";
 import {
   fetchUserRank,
   loadUserProgress,
@@ -37,7 +37,7 @@ export async function GET() {
   }
 
   const raw = await loadUserProgress(userId);
-  const state = toProgressionState(raw);
+  const state = buildFullProgressionState(raw);
 
   if (isSupabaseConfigured()) {
     state.rank = await fetchUserRank(raw.xp);
@@ -75,5 +75,5 @@ export async function PATCH(req: Request) {
     "profile_update",
   );
 
-  return NextResponse.json(toProgressionState(raw));
+  return NextResponse.json(buildFullProgressionState(raw));
 }

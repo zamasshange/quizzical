@@ -15,7 +15,9 @@ const GUEST_LINKS = [{ label: "Sign Up", href: "/signup" }];
 
 const MEMBER_LINKS = [
   { label: "My Games", href: "/profile" },
+  { label: "Knowledge Atlas", href: "/knowledge-atlas" },
   { label: "Knowledge Book", href: "/knowledge-book" },
+  { label: "Hall of Fame", href: "/hall-of-fame" },
   { label: "Leaderboard", href: "/leaderboard" },
 ];
 
