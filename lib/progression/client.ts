@@ -99,6 +99,13 @@ export function useProgression() {
     void refresh();
   }, [clerkReady, refresh]);
 
+  /** Keep all useProgression() hooks in sync after any quiz event. */
+  useEffect(() => {
+    return onProgressionEvent((result) => {
+      setState(result.state);
+    });
+  }, []);
+
   const recordEvent = useCallback(
     async (payload: ProgressionEventPayload): Promise<ProgressionEventResult> => {
       if (isSignedIn) {
@@ -176,6 +183,31 @@ export async function recordProgressionEvent(
       });
       if (res.ok) {
         const result = (await res.json()) as ProgressionEventResult;
+        const raw = loadRawState();
+        saveRawState({
+          ...raw,
+          xp: result.state.xp,
+          coins: result.state.coins,
+          currentStreak: result.state.currentStreak,
+          longestStreak: result.state.longestStreak,
+          discoveries: result.state.discoveries,
+          mastery: Object.fromEntries(
+            result.state.mastery.map((m) => [
+              m.slug,
+              { answered: m.answered, correct: m.correct },
+            ]),
+          ),
+          unlockedAchievements: result.state.achievements
+            .filter((a) => a.unlocked)
+            .map((a) => a.id),
+          unlockedBadges: result.state.badges.map((b) => b.id),
+          missions: result.state.missions,
+          stats: result.state.stats,
+          unlockedItems: result.state.unlockedItemIds ?? raw.unlockedItems,
+          seasonXp: result.state.season?.userSeasonXp ?? raw.seasonXp,
+          seasonDiscoveries:
+            result.state.season?.userSeasonDiscoveries ?? raw.seasonDiscoveries,
+        });
         emit(result);
         return result;
       }
