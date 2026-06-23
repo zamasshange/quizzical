@@ -22,6 +22,7 @@ export async function GET(request: Request) {
   );
   const difficulty = normalizeDifficulty(searchParams.get("difficulty"));
   const quick = searchParams.get("quick") === "1";
+  const fast = searchParams.get("fast") === "1" || quick;
   const excludeAnswers = searchParams.getAll("excludeAnswer");
   const excludeImages = searchParams.getAll("excludeImage");
 
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
   }
 
   let serverAnswers: string[] = [];
-  if (userId) {
+  if (userId && !fast) {
     const contentType = imageCategoryToContentType(category);
     const exclusions = await buildContentExclusions(userId, contentType);
     serverAnswers = exclusions.answers;
@@ -49,6 +50,6 @@ export async function GET(request: Request) {
   const questions = await generateImageQuizBatch(category, count, difficulty, {
     answers: mergedAnswers,
     images: excludeImages,
-  }, { cacheOnly: quick });
+  }, { cacheOnly: quick && !fast, fastStart: fast });
   return NextResponse.json({ questions });
 }

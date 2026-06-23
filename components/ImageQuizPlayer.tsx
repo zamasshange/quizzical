@@ -62,8 +62,8 @@ type TimerSeconds = (typeof TIMER_OPTIONS)[number];
 const DEFAULT_TIMER: TimerSeconds = 20;
 const MAX_POINTS = 1000;
 const MAX_QUESTIONS = 10;
-const QUICK_START_COUNT = 5;
-const FULL_BATCH_COUNT = 10;
+const START_COUNT = 5;
+const REFILL_COUNT = 10;
 
 type Phase = "playing" | "reveal" | "finished";
 type Status = "setup" | "loading" | "ready" | "empty" | "error";
@@ -108,6 +108,10 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   const router = useRouter();
   const completeGame = useCompleteGame();
   const finishedRef = useRef(false);
+  const warmRef = useRef<{
+    key: string;
+    promise: Promise<SourceQuestion[]>;
+  } | null>(null);
 
   const [status, setStatus] = useState<Status>("setup");
   const [pendingResume, setPendingResume] = useState<SavedGameSession | null>(
@@ -134,74 +138,100 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
   useQuizFinishSound(phase, correctCount, questions.length);
 
+  const buildQuizParams = useCallback(
+    (
+      level: Difficulty,
+      count: number,
+      excluded: { answers: string[]; images: string[] },
+      opts?: { fast?: boolean },
+    ) => {
+      const params = new URLSearchParams({
+        category: mode.category,
+        count: String(count),
+        difficulty: level,
+      });
+      if (opts?.fast !== false) params.set("fast", "1");
+      for (const answer of excluded.answers) {
+        params.append("excludeAnswer", answer);
+      }
+      for (const image of excluded.images) {
+        params.append("excludeImage", image);
+      }
+      return params;
+    },
+    [mode.category],
+  );
+
+  const fetchQuizRows = useCallback(
+    async (
+      level: Difficulty,
+      count: number,
+      excluded: { answers: string[]; images: string[] },
+      fast = true,
+    ): Promise<SourceQuestion[]> => {
+      const res = await fetch(
+        `/api/image-quiz?${buildQuizParams(level, count, excluded, { fast }).toString()}`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) throw new Error("Request failed");
+      const data = (await res.json()) as { questions?: SourceQuestion[] };
+      return data.questions ?? [];
+    },
+    [buildQuizParams],
+  );
+
+  const warmQuiz = useCallback(
+    (level: Difficulty) => {
+      const historyKey = playHistoryKey("image", mode.category, level);
+      const excluded = getExcluded(historyKey);
+      const key = `${mode.category}|${level}|${excluded.answers.length}`;
+      warmRef.current = {
+        key,
+        promise: fetchQuizRows(level, START_COUNT, excluded, true),
+      };
+    },
+    [mode.category, fetchQuizRows],
+  );
+
+  useEffect(() => {
+    if (status === "setup") warmQuiz(difficulty);
+  }, [status, difficulty, warmQuiz]);
+
   const loadQuestions = useCallback(
     async (level: Difficulty, rotate = false) => {
       setStatus("loading");
-      setLoadProgress("Building quiz…");
+      setLoadProgress("Starting game…");
       const historyKey = playHistoryKey("image", mode.category, level);
       if (rotate) rotateExcluded(historyKey);
       const excluded = getExcluded(historyKey);
       const isMovie = mode.category === "Movie";
-
-      const buildParams = (count: string, quick: boolean) => {
-        const params = new URLSearchParams({
-          category: mode.category,
-          count,
-          difficulty: level,
-        });
-        if (quick) params.set("quick", "1");
-        for (const answer of excluded.answers) {
-          params.append("excludeAnswer", answer);
-        }
-        for (const image of excluded.images) {
-          params.append("excludeImage", image);
-        }
-        return params;
-      };
+      const warmKey = `${mode.category}|${level}|${excluded.answers.length}`;
 
       try {
-        let res = await fetch(
-          `/api/image-quiz?${buildParams(String(QUICK_START_COUNT), true)}`,
-          { cache: "no-store" },
-        );
-        if (!res.ok) throw new Error("Request failed");
-        let data = (await res.json()) as { questions: SourceQuestion[] };
-        let prepared = prepare(data.questions ?? []);
+        let rows: SourceQuestion[] = [];
 
-        if (prepared.length < 3) {
-          setLoadProgress("Fetching more questions…");
-          res = await fetch(
-            `/api/image-quiz?${buildParams(String(FULL_BATCH_COUNT), false)}`,
-            { cache: "no-store" },
-          );
-          if (!res.ok) throw new Error("Request failed");
-          data = (await res.json()) as { questions: SourceQuestion[] };
-          prepared = prepare(data.questions ?? []);
-        } else {
-          void fetch(
-            `/api/image-quiz?${buildParams(String(FULL_BATCH_COUNT), false)}`,
-            { cache: "no-store" },
-          )
-            .then((r) => (r.ok ? r.json() : null))
-            .then((extra: { questions?: SourceQuestion[] } | null) => {
-              const more = prepare(extra?.questions ?? []);
-              if (more.length > prepared.length) {
-                setQuestions((cur) =>
-                  cur.length >= more.length ? cur : more,
-                );
-              }
-            })
-            .catch(() => undefined);
+        if (!rotate && warmRef.current?.key === warmKey) {
+          rows = await warmRef.current.promise;
         }
 
+        if (rows.length === 0) {
+          setLoadProgress("Loading questions…");
+          rows = await fetchQuizRows(level, START_COUNT, excluded, true);
+        }
+
+        if (rows.length === 0) {
+          setLoadProgress("Almost ready…");
+          rows = await fetchQuizRows(level, START_COUNT, excluded, false);
+        }
+
+        const prepared = prepare(rows);
         if (prepared.length === 0) {
           setStatus("empty");
           return;
         }
 
-        setLoadProgress("Loading first image…");
         const first = prepared[0];
-        await prefetchImages(
+        void prefetchImages(
           questionPrefetchUrls(
             first.image_url,
             first.reveal_image_url,
@@ -230,11 +260,23 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setPhase("playing");
         setLoadProgress("");
         setStatus("ready");
+
+        void fetchQuizRows(level, REFILL_COUNT, excluded, false)
+          .then((extra) => {
+            const more = prepare(extra);
+            if (more.length > prepared.length) {
+              setQuestions((cur) =>
+                cur.length >= more.length ? cur : more,
+              );
+            }
+            void prefetchUpcoming(more, 0, more.length, isMovie);
+          })
+          .catch(() => undefined);
       } catch {
         setStatus("error");
       }
     },
-    [mode.category, timerSeconds],
+    [mode.category, timerSeconds, fetchQuizRows],
   );
 
   const question = questions[index];

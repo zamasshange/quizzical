@@ -26,6 +26,22 @@ import {
   normalizeImageUrl,
   optimizeQuizImageUrl,
 } from "./quizImageUrl";
+import bootstrapRows from "./imageQuizBootstrap.json";
+
+type BootstrapRow = {
+  name: string;
+  category: string;
+  image_url: string;
+  description: string;
+  correct_answer: string;
+  wrong_answers: string[];
+  poster_url?: string | null;
+  hint?: string | null;
+};
+
+const BOOTSTRAP = new Map<string, BootstrapRow>(
+  Object.entries(bootstrapRows as Record<string, BootstrapRow>),
+);
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
@@ -332,25 +348,26 @@ async function workingEntries(
   count: number,
   difficulty: Difficulty,
   exclude?: ExcludeSet,
+  opts?: { poolOnly?: boolean },
 ): Promise<{ entries: PoolEntry[]; distractors: string[] }> {
   const want = difficulty === "Hard" ? count * 3 : count * 2;
   const blocked = toExcludeSet(exclude);
 
-  // Use a cached AI name pool (per category+difficulty) and randomly sample from
-  // it. This keeps the slow AI call rare while staying varied; recurring names
-  // also keep the per-subject Wikipedia/TMDB cache warm for fast subsequent loads.
-  const poolKey = `${category}|${difficulty}`;
-  let pool = getCandidatePool(poolKey);
-  if (!pool || pool.length < want) {
-    const generated = await aiCandidates(category, 36, difficulty);
-    if (generated && generated.length > 0) {
-      saveCandidatePool(poolKey, generated);
-      pool = generated;
+  let pool: AiCandidate[] | null = null;
+  if (!opts?.poolOnly) {
+    const poolKey = `${category}|${difficulty}`;
+    let cached = getCandidatePool(poolKey);
+    if (!cached || cached.length < want) {
+      const generated = await aiCandidates(category, 36, difficulty);
+      if (generated && generated.length > 0) {
+        saveCandidatePool(poolKey, generated);
+        cached = generated;
+      }
     }
+    pool = cached ? shuffle(cached).slice(0, Math.max(want, 20)) : null;
   }
 
-  const ai = pool ? shuffle(pool).slice(0, Math.max(want, 20)) : null;
-  const aiEntries: PoolEntry[] = (ai ?? []).map((c) => ({
+  const aiEntries: PoolEntry[] = (pool ?? []).map((c) => ({
     label: c.name,
     query: c.name,
     decoys: c.decoys,
@@ -370,7 +387,6 @@ async function workingEntries(
     addEntry(e);
   }
 
-  // Supplement from the Wikipedia/TMDB cache when exclusions shrink the pool.
   if (merged.length < count + 4) {
     const cached = await getCachedByCategory(category);
     for (const row of shuffle(cached)) {
@@ -379,7 +395,6 @@ async function workingEntries(
     }
   }
 
-  // Fallback distractor pool: every name + every decoy we know about.
   const distractorSet = new Set<string>();
   for (const c of pool ?? []) {
     distractorSet.add(c.name);
@@ -445,6 +460,7 @@ async function generateForEntry(
   category: string,
   entry: PoolEntry,
   fallbackDistractors: string[],
+  opts?: { deferCache?: boolean },
 ): Promise<GeneratedQuestion | null> {
   if (category === "Athlete" && isMajorTeamSportAthlete(entry.label)) return null;
 
@@ -459,6 +475,31 @@ async function generateForEntry(
         : (entry.decoys ?? []);
     return finalizeWrongAnswers(correct, preferred, pool);
   };
+  // 0. Bundled bootstrap (zero network — instant cold start).
+  const boot = BOOTSTRAP.get(`${category}|${entry.label}`);
+  if (boot?.image_url?.trim() && isAllowedQuizImageUrl(boot.image_url)) {
+    const wrong_answers = decoysFor(boot.correct_answer);
+    const payload = {
+      name: boot.name,
+      category: boot.category,
+      image_url: boot.image_url,
+      description: boot.description,
+      correct_answer: boot.correct_answer,
+      wrong_answers,
+      poster_url: boot.poster_url ?? undefined,
+      hint: boot.hint ?? undefined,
+    };
+    if (opts?.deferCache) {
+      void saveCachedQuiz(payload).catch(() => undefined);
+      return buildQuestion({
+        id: `boot-${boot.name.toLowerCase().replace(/\s+/g, "-")}`,
+        ...payload,
+      });
+    }
+    const saved = await saveCachedQuiz(payload);
+    return buildQuestion({ ...saved, wrong_answers });
+  }
+
   // 1. Cache first.
   let cached = await getCachedQuiz(entry.label, category);
   if (cached) {
@@ -516,9 +557,10 @@ async function generateForEntry(
 
   if (category === "Movie") {
     const m = await fetchMovieData(entry.label);
+    let summary: Awaited<ReturnType<typeof fetchWikipediaSummary>> = null;
     image_url = m.backdrop_url;
     if (!image_url || isTmdbPosterImageUrl(image_url)) {
-      let summary = await fetchWikipediaSummary(entry.query);
+      summary = await fetchWikipediaSummary(entry.query);
       if (!summary) summary = await fetchWikipediaSummary(`${entry.label} (film)`);
       if (summary?.image_url && !isTmdbPosterImageUrl(summary.image_url)) {
         image_url = summary.image_url;
@@ -527,9 +569,11 @@ async function generateForEntry(
     if (!image_url || isTmdbPosterImageUrl(image_url)) return null;
     poster_url = m.poster_url ?? undefined;
     hint = m.hint ?? undefined;
-    let summary = await fetchWikipediaSummary(entry.query);
-    if (!summary) summary = await fetchWikipediaSummary(`${entry.label} (film)`);
-    description = summary?.description ?? "";
+    if (!summary) {
+      summary = await fetchWikipediaSummary(entry.query);
+      if (!summary) summary = await fetchWikipediaSummary(`${entry.label} (film)`);
+    }
+    description = summary?.description ?? hint ?? "";
   } else {
     const summary = await fetchWikipediaSummary(entry.query);
     if (!summary) return null;
@@ -541,7 +585,7 @@ async function generateForEntry(
 
   const wrong_answers = decoysFor(entry.label);
 
-  const saved = await saveCachedQuiz({
+  const payload = {
     name: entry.label,
     category,
     image_url,
@@ -550,7 +594,17 @@ async function generateForEntry(
     wrong_answers,
     poster_url,
     hint,
-  });
+  };
+
+  if (opts?.deferCache) {
+    void saveCachedQuiz(payload).catch(() => undefined);
+    return buildQuestion({
+      id: `fast-${entry.label.toLowerCase().replace(/\s+/g, "-")}`,
+      ...payload,
+    });
+  }
+
+  const saved = await saveCachedQuiz(payload);
 
   return buildQuestion(saved);
 }
@@ -560,7 +614,7 @@ export async function generateImageQuizBatch(
   count = 10,
   difficulty: Difficulty = "Medium",
   exclude?: ExcludeSet,
-  options?: { cacheOnly?: boolean },
+  options?: { cacheOnly?: boolean; fastStart?: boolean },
 ): Promise<GeneratedQuestion[]> {
   if (!isImageCategory(category)) return [];
 
@@ -626,23 +680,27 @@ export async function generateImageQuizBatch(
 
   if (options?.cacheOnly) return results;
 
-  // Slow path — generate any remaining questions (parallel, capped).
+  const fastStart = options?.fastStart === true;
+  const concurrency = fastStart ? 10 : 8;
+
   const { entries, distractors: liveDistractors } = await workingEntries(
     category,
     count,
     difficulty,
     exclude,
+    { poolOnly: fastStart },
   );
 
   const pending = entries.filter(
     (e) => !usedAnswer.has(e.label.toLowerCase()),
   );
-  const CONCURRENCY = 6;
-  for (let i = 0; i < pending.length && results.length < count; i += CONCURRENCY) {
-    const slice = pending.slice(i, i + CONCURRENCY);
+  for (let i = 0; i < pending.length && results.length < count; i += concurrency) {
+    const slice = pending.slice(i, i + concurrency);
     const qs = await Promise.all(
       slice.map((e) =>
-        generateForEntry(category, e, liveDistractors).catch(() => null),
+        generateForEntry(category, e, liveDistractors, {
+          deferCache: fastStart,
+        }).catch(() => null),
       ),
     );
     for (const q of qs) {
@@ -656,9 +714,9 @@ export async function generateImageQuizBatch(
     }
   }
 
-  if (results.length >= count) return results.slice(0, count);
+  if (results.length >= count || fastStart) return results.slice(0, count);
 
-  // Second pass with refreshed AI pool if still short.
+  // Slow path — refresh AI pool and retry (skipped on fastStart).
   const fresh = await aiCandidates(category, 36, difficulty);
   if (fresh && fresh.length > 0) {
     saveCandidatePool(`${category}|${difficulty}`, fresh);
