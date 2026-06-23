@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Nunito, Baloo_2 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
@@ -79,6 +80,7 @@ export default function RootLayout({
             <ProgressionLayer />
           </AtmosphereProvider>
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
