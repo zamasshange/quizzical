@@ -6,7 +6,6 @@ import LockedContentPreview from "./LockedContentPreview";
 type Props = {
   href: string;
   children: React.ReactNode;
-  /** Shown blurred behind the lock overlay. */
   preview?: React.ReactNode;
 };
 
@@ -17,7 +16,7 @@ export default function UnlockGate({ href, children, preview }: Props) {
   if (locked && unlock) {
     return (
       <div className="mx-auto max-w-lg py-4">
-        <LockedContentPreview unlock={unlock}>
+        <LockedContentPreview unlock={unlock} mode="full">
           {preview ?? (
             <div className="flex aspect-video items-center justify-center rounded-2xl border-4 border-ink bg-cream">
               <span className="text-4xl">{unlock.emoji}</span>

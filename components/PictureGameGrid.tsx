@@ -82,10 +82,10 @@ function PictureCard({
   const { unlock, locked } = useUnlockForHref(href);
 
   const widthClass = fill
-    ? "group block w-full min-w-0"
-    : "group block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem]";
+    ? "block w-full min-w-0"
+    : "block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem]";
 
-  const cardInner = (
+  const imageBox = (
     <div className="relative aspect-[4/5] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
       {previewUrl ? (
         <ContainedPhoto
@@ -119,19 +119,21 @@ function PictureCard({
     </div>
   );
 
-  if (locked && unlock) {
-    return (
-      <div className={widthClass}>
-        <LockedContentPreview unlock={unlock} variant="card">
-          {cardInner}
-        </LockedContentPreview>
-      </div>
-    );
+  const visual = locked && unlock ? (
+    <LockedContentPreview unlock={unlock} className="rounded-xl">
+      {imageBox}
+    </LockedContentPreview>
+  ) : (
+    imageBox
+  );
+
+  if (locked) {
+    return <div className={widthClass}>{visual}</div>;
   }
 
   return (
-    <Link href={href} className={widthClass}>
-      {cardInner}
+    <Link href={href} className={`group ${widthClass}`}>
+      {visual}
     </Link>
   );
 }
@@ -161,7 +163,6 @@ function DesktopGrid({ modes }: { modes: GameMode[] }) {
   );
 }
 
-/** Entertainment first, then sports — single row. */
 function orderModes(modes: GameMode[]) {
   const entertainment = modes.filter(
     (m) => m.quizCategorySlug === "entertainment",

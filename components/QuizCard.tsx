@@ -100,13 +100,92 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
     setThumbUrl(null);
   }
 
-  const card = (
+  const imageBox = (
+    <motion.div
+      className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d]"
+      style={{ backgroundColor: quiz.color }}
+      variants={cardHover}
+      initial="rest"
+      whileHover={locked ? "rest" : "hover"}
+      whileTap={locked ? "rest" : "tap"}
+      transition={defaultTransition}
+    >
+      {activeSrc ? (
+        <>
+          <ContainedPhoto
+            src={activeSrc}
+            alt=""
+            className="absolute inset-0 h-full w-full"
+            onLoad={() => setShowEmoji(false)}
+            onError={handleThumbError}
+          />
+          <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-ink/40 via-transparent to-transparent" />
+        </>
+      ) : (
+        <span className="text-6xl drop-shadow-sm md:text-7xl">{quiz.emoji}</span>
+      )}
+      {quiz.badge && !locked && <BadgePill badge={quiz.badge} />}
+
+      {!locked && (
+        <motion.div
+          className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-xl border-2 border-ink/80 bg-white/95 p-2.5 shadow-[0_3px_0_0_#0d0d0d] backdrop-blur-sm"
+          initial={false}
+          animate={{ opacity: hover ? 1 : 0, y: hover ? 0 : 8 }}
+          transition={{ duration: 0.2 }}
+        >
+          <p className="line-clamp-1 text-xs font-extrabold text-ink">
+            {profile.previewTitle}
+          </p>
+          <p className="line-clamp-2 text-[10px] font-semibold leading-snug text-ink/60">
+            {profile.previewDetail}
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <span className="rounded-md bg-lime/80 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-ink">
+              {profile.difficulty}
+            </span>
+            <span className="rounded-md bg-cream px-1.5 py-0.5 text-[9px] font-bold text-ink/55">
+              {profile.questionLabel}
+            </span>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+
+  const body = (
+    <>
+      {locked && unlock ? (
+        <LockedContentPreview unlock={unlock} className="rounded-2xl">
+          {imageBox}
+        </LockedContentPreview>
+      ) : (
+        imageBox
+      )}
+      <div className="flex flex-col gap-0.5 pt-2.5">
+        <h3 className="line-clamp-2 text-base font-extrabold leading-tight text-ink">
+          {quiz.title}
+        </h3>
+        <div className="flex items-center gap-2">
+          <Stars rating={quiz.rating} />
+          <span className="truncate text-xs font-extrabold uppercase tracking-wide text-ink/45">
+            {tag}
+          </span>
+        </div>
+        <p className="line-clamp-1 text-[10px] font-semibold text-ink/40">
+          {quiz.plays.toLocaleString()} plays · {profile.difficulty}
+        </p>
+      </div>
+    </>
+  );
+
+  return (
     <motion.div
       variants={fadeUp}
       initial="hidden"
       animate="visible"
       transition={{ ...defaultTransition, delay: index * 0.06 }}
       onHoverStart={() => {
+        if (locked) return;
         setHover(true);
         prefetchReveal(revealCategory, profile.thumbnailTerm);
         if (thumbUrl) {
@@ -118,82 +197,15 @@ export default function QuizCard({ quiz, index = 0 }: Props) {
         }
       }}
       onHoverEnd={() => setHover(false)}
+      className="flex min-w-0 flex-col"
     >
-      <Link href={href} className="group flex flex-col">
-        <motion.div
-          className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border-[3px] border-ink shadow-[0_4px_0_0_#0d0d0d]"
-          style={{ backgroundColor: quiz.color }}
-          variants={cardHover}
-          initial="rest"
-          whileHover="hover"
-          whileTap="tap"
-          transition={defaultTransition}
-        >
-          {locked && (
-            <span className="absolute right-2 top-2 z-30 rounded-full border-2 border-ink bg-white px-2 py-0.5 text-[10px] font-extrabold">
-              🔒
-            </span>
-          )}
-          {activeSrc ? (
-            <>
-              <ContainedPhoto
-                src={activeSrc}
-                alt=""
-                className="absolute inset-0 h-full w-full"
-                onLoad={() => setShowEmoji(false)}
-                onError={handleThumbError}
-              />
-              <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-ink/40 via-transparent to-transparent" />
-            </>
-          ) : (
-            <span className="text-6xl drop-shadow-sm md:text-7xl">{quiz.emoji}</span>
-          )}
-          {quiz.badge && <BadgePill badge={quiz.badge} />}
-
-          {/* Smart hover preview */}
-          <motion.div
-            className="pointer-events-none absolute inset-x-2 bottom-2 z-20 rounded-xl border-2 border-ink/80 bg-white/95 p-2.5 shadow-[0_3px_0_0_#0d0d0d] backdrop-blur-sm"
-            initial={false}
-            animate={{ opacity: hover ? 1 : 0, y: hover ? 0 : 8 }}
-            transition={{ duration: 0.2 }}
-          >
-            <p className="line-clamp-1 text-xs font-extrabold text-ink">
-              {profile.previewTitle}
-            </p>
-            <p className="line-clamp-2 text-[10px] font-semibold leading-snug text-ink/60">
-              {profile.previewDetail}
-            </p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              <span className="rounded-md bg-lime/80 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-ink">
-                {profile.difficulty}
-              </span>
-              <span className="rounded-md bg-cream px-1.5 py-0.5 text-[9px] font-bold text-ink/55">
-                {profile.questionLabel}
-              </span>
-            </div>
-          </motion.div>
-        </motion.div>
-        <div className="flex flex-col gap-0.5 pt-2.5">
-          <h3 className="line-clamp-2 text-base font-extrabold leading-tight text-ink">
-            {quiz.title}
-          </h3>
-          <div className="flex items-center gap-2">
-            <Stars rating={quiz.rating} />
-            <span className="truncate text-xs font-extrabold uppercase tracking-wide text-ink/45">
-              {tag}
-            </span>
-          </div>
-          <p className="line-clamp-1 text-[10px] font-semibold text-ink/40">
-            {quiz.plays.toLocaleString()} plays · {profile.difficulty}
-          </p>
-        </div>
-      </Link>
+      {locked ? (
+        <div className="flex flex-col">{body}</div>
+      ) : (
+        <Link href={href} className="group flex flex-col">
+          {body}
+        </Link>
+      )}
     </motion.div>
   );
-
-  if (locked && unlock) {
-    return <LockedContentPreview unlock={unlock}>{card}</LockedContentPreview>;
-  }
-
-  return card;
 }
