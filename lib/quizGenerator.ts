@@ -545,6 +545,15 @@ async function generateFastBatch(
     }
   }
 
+  if (results.length === 0 && (blocked.answers.size > 0 || blocked.images.size > 0)) {
+    return collectBootstrapQuestions(
+      category,
+      count,
+      { answers: new Set(), images: new Set() },
+      distractors,
+    ).slice(0, count);
+  }
+
   return results.slice(0, count);
 }
 

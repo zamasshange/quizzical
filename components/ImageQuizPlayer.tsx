@@ -185,6 +185,34 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     [buildQuizParams],
   );
 
+  const fetchWithFallback = useCallback(
+    async (
+      level: Difficulty,
+      count: QuestionCount,
+      historyKey: string,
+    ): Promise<SourceQuestion[]> => {
+      let excluded = getExcluded(historyKey);
+      let rows = await fetchQuizRows(level, count, excluded, true);
+
+      if (rows.length === 0 && excluded.answers.length + excluded.images.length > 0) {
+        rotateExcluded(historyKey);
+        excluded = getExcluded(historyKey);
+        rows = await fetchQuizRows(level, count, excluded, true);
+      }
+
+      if (rows.length === 0) {
+        rows = await fetchQuizRows(level, count, { answers: [], images: [] }, true);
+      }
+
+      if (rows.length === 0) {
+        rows = await fetchQuizRows(level, count, { answers: [], images: [] }, false);
+      }
+
+      return rows;
+    },
+    [fetchQuizRows],
+  );
+
   const warmQuiz = useCallback(
     (level: Difficulty, count: QuestionCount) => {
       const historyKey = playHistoryKey("image", mode.category, level);
@@ -192,10 +220,10 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       const key = `${mode.category}|${level}|${count}|${excluded.answers.length}`;
       warmRef.current = {
         key,
-        promise: fetchQuizRows(level, count, excluded, true),
+        promise: fetchWithFallback(level, count, historyKey),
       };
     },
-    [mode.category, fetchQuizRows],
+    [mode.category, fetchWithFallback],
   );
 
   useEffect(() => {
@@ -221,7 +249,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
 
         if (rows.length === 0) {
           setLoadProgress("Loading questions…");
-          rows = await fetchQuizRows(level, count, excluded, true);
+          rows = await fetchWithFallback(level, count, historyKey);
         }
 
         const prepared = prepare(rows, count);
@@ -276,7 +304,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setStatus("error");
       }
     },
-    [mode.category, timerSeconds, fetchQuizRows],
+    [mode.category, timerSeconds, fetchQuizRows, fetchWithFallback],
   );
 
   const question = questions[index];
@@ -625,15 +653,25 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           Couldn&apos;t build a quiz
         </h2>
         <p className="font-bold text-ink/60">
-          We couldn&apos;t reach the image source right now. Please try again.
+          We couldn&apos;t load questions right now. Try again — we&apos;ll
+          refresh the player pool.
         </p>
-        <Button3D
-          variant="grass"
-          size="lg"
-          onClick={() => setStatus("setup")}
-        >
-          Back
-        </Button3D>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button3D
+            variant="grass"
+            size="lg"
+            onClick={() => void loadQuestions(difficulty, questionCount, true)}
+          >
+            Try again
+          </Button3D>
+          <Button3D
+            variant="white"
+            size="lg"
+            onClick={() => setStatus("setup")}
+          >
+            Back
+          </Button3D>
+        </div>
       </Centered>
     );
   }
