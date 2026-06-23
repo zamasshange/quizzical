@@ -26,9 +26,10 @@ export default function NavActions() {
       <button
         type="button"
         onClick={surpriseMe}
-        className="hidden h-10 items-center gap-1.5 rounded-full border-2 border-ink bg-lime px-4 text-sm font-extrabold text-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:flex"
+        className="hidden h-9 items-center gap-1 rounded-full border-2 border-ink bg-lime px-2.5 text-xs font-extrabold text-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform hover:-translate-y-0.5 active:translate-y-0 md:h-10 md:gap-1.5 md:px-3 md:text-sm lg:flex"
       >
-        🎲 Surprise me
+        <span aria-hidden>🎲</span>
+        <span className="hidden md:inline">Surprise</span>
       </button>
 
       <button

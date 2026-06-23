@@ -64,12 +64,6 @@ export default function NavbarAuth() {
         </Link>
       </Show>
       <Show when="signed-in">
-        <Link
-          href="/profile"
-          className="hidden text-sm font-extrabold text-ink/60 transition-colors hover:text-ink sm:inline"
-        >
-          My Games
-        </Link>
         <CustomUserButton />
       </Show>
     </>
