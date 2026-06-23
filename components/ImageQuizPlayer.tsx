@@ -199,8 +199,8 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
   );
 
   useEffect(() => {
-    if (status === "setup") warmQuiz(difficulty, questionCount);
-  }, [status, difficulty, questionCount, warmQuiz]);
+    warmQuiz(difficulty, questionCount);
+  }, [difficulty, questionCount, warmQuiz]);
 
   const loadQuestions = useCallback(
     async (level: Difficulty, count: QuestionCount, rotate = false) => {
@@ -219,16 +219,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           rows = await warmRef.current.promise;
         }
 
-        if (rows.length < count) {
+        if (rows.length === 0) {
           setLoadProgress("Loading questions…");
-          const fast = await fetchQuizRows(level, count, excluded, true);
-          if (fast.length > rows.length) rows = fast;
-        }
-
-        if (rows.length < count) {
-          setLoadProgress("Almost ready…");
-          const full = await fetchQuizRows(level, count, excluded, false);
-          if (full.length > rows.length) rows = full;
+          rows = await fetchQuizRows(level, count, excluded, true);
         }
 
         const prepared = prepare(rows, count);
@@ -267,6 +260,18 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
         setPhase("playing");
         setLoadProgress("");
         setStatus("ready");
+
+        if (prepared.length < count) {
+          void fetchQuizRows(level, count, excluded, false)
+            .then((extra) => {
+              const more = prepare(extra, count);
+              if (more.length > prepared.length) {
+                setQuestions(more);
+                void prefetchUpcoming(more, 0, more.length, isMovie);
+              }
+            })
+            .catch(() => undefined);
+        }
       } catch {
         setStatus("error");
       }

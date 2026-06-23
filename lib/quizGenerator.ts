@@ -348,7 +348,7 @@ async function workingEntries(
   count: number,
   difficulty: Difficulty,
   exclude?: ExcludeSet,
-  opts?: { poolOnly?: boolean },
+  opts?: { poolOnly?: boolean; skipDb?: boolean },
 ): Promise<{ entries: PoolEntry[]; distractors: string[] }> {
   const want = difficulty === "Hard" ? count * 3 : count * 2;
   const blocked = toExcludeSet(exclude);
@@ -387,7 +387,7 @@ async function workingEntries(
     addEntry(e);
   }
 
-  if (merged.length < count + 4) {
+  if (merged.length < count + 4 && !opts?.skipDb) {
     const cached = await getCachedByCategory(category);
     for (const row of shuffle(cached)) {
       if (merged.length >= count + 12) break;
@@ -428,6 +428,124 @@ function finalizeWrongAnswers(
   take(preferred); // AI's close, difficulty-tuned decoys
   if (out.length < 3) take(shuffle(fallback)); // top up if AI gave too few
   return out.slice(0, 3);
+}
+
+function questionFromBootstrap(
+  category: string,
+  boot: BootstrapRow,
+  distractors: string[],
+): GeneratedQuestion | null {
+  if (!boot.image_url?.trim() || !isAllowedQuizImageUrl(boot.image_url)) return null;
+  if (category === "Athlete" && isMajorTeamSportAthlete(boot.correct_answer))
+    return null;
+  const wrong_answers =
+    category === "Athlete"
+      ? finalizeWrongAnswers(
+          boot.correct_answer,
+          boot.wrong_answers,
+          distractors.filter((d) => !isMajorTeamSportAthlete(d)),
+        )
+      : finalizeWrongAnswers(boot.correct_answer, boot.wrong_answers, distractors);
+  return buildQuestion({
+    id: `boot-${boot.name.toLowerCase().replace(/\s+/g, "-")}`,
+    category: boot.category,
+    image_url: boot.image_url,
+    description: boot.description,
+    correct_answer: boot.correct_answer,
+    wrong_answers,
+    poster_url: boot.poster_url ?? undefined,
+    hint: boot.hint ?? undefined,
+  });
+}
+
+function collectBootstrapQuestions(
+  category: string,
+  count: number,
+  blocked: ReturnType<typeof toExcludeSet>,
+  distractors: string[],
+): GeneratedQuestion[] {
+  const usedAnswer = new Set<string>(blocked.answers);
+  const usedImage = new Set<string>(blocked.images);
+  const results: GeneratedQuestion[] = [];
+  const entries = shuffle(POOLS[category]?.entries ?? []);
+
+  for (const entry of entries) {
+    if (results.length >= count) break;
+    const boot = BOOTSTRAP.get(`${category}|${entry.label}`);
+    if (!boot) continue;
+    const answerKey = boot.correct_answer.toLowerCase();
+    if (usedAnswer.has(answerKey) || usedImage.has(boot.image_url)) continue;
+    const q = questionFromBootstrap(category, boot, distractors);
+    if (!q) continue;
+    usedAnswer.add(answerKey);
+    usedImage.add(boot.image_url);
+    results.push(q);
+    void saveCachedQuiz({
+      name: boot.name,
+      category: boot.category,
+      image_url: boot.image_url,
+      description: boot.description,
+      correct_answer: boot.correct_answer,
+      wrong_answers: q.wrong_answers,
+      poster_url: boot.poster_url ?? undefined,
+      hint: boot.hint ?? undefined,
+    }).catch(() => undefined);
+  }
+
+  return results;
+}
+
+async function generateFastBatch(
+  category: string,
+  count: number,
+  difficulty: Difficulty,
+  exclude: ExcludeSet | undefined,
+  distractors: string[],
+): Promise<GeneratedQuestion[]> {
+  const blocked = toExcludeSet(exclude);
+  const results = collectBootstrapQuestions(category, count, blocked, distractors);
+  if (results.length >= count) return results.slice(0, count);
+
+  const usedAnswer = new Set<string>(blocked.answers);
+  const usedImage = new Set<string>(blocked.images);
+  for (const q of results) {
+    usedAnswer.add(q.correct_answer.toLowerCase());
+    usedImage.add(q.image_url);
+  }
+
+  const { entries, distractors: liveDistractors } = await workingEntries(
+    category,
+    count,
+    difficulty,
+    { answers: [...usedAnswer], images: [...usedImage] },
+    { poolOnly: true, skipDb: true },
+  );
+
+  const pending = entries.filter(
+    (e) => !usedAnswer.has(e.label.toLowerCase()),
+  );
+  const concurrency = 12;
+  for (let i = 0; i < pending.length && results.length < count; i += concurrency) {
+    const slice = pending.slice(i, i + concurrency);
+    const qs = await Promise.all(
+      slice.map((e) =>
+        generateForEntry(category, e, liveDistractors, { deferCache: true }).catch(
+          () => null,
+        ),
+      ),
+    );
+    for (const q of qs) {
+      if (!q) continue;
+      const answerKey = q.correct_answer.toLowerCase();
+      if (usedAnswer.has(answerKey) || usedImage.has(q.image_url)) continue;
+      usedAnswer.add(answerKey);
+      usedImage.add(q.image_url);
+      results.push(q);
+      if (results.length >= count) break;
+    }
+  }
+
+  return results.slice(0, count);
 }
 
 function buildQuestion(row: {
@@ -500,54 +618,55 @@ async function generateForEntry(
     return buildQuestion({ ...saved, wrong_answers });
   }
 
-  // 1. Cache first.
-  let cached = await getCachedQuiz(entry.label, category);
-  if (cached) {
-    // Upgrade movie entries cached before the backdrop/poster/hint split.
-    if (category === "Movie") {
-      const needsBackdrop =
-        !cached.image_url.includes("image.tmdb.org") ||
-        isTmdbPosterImageUrl(cached.image_url);
-      const needsPoster = !cached.poster_url;
-      const needsHint = !cached.hint;
-      if (needsBackdrop || needsPoster || needsHint) {
-        const m = await fetchMovieData(entry.label);
-        let image_url = m.backdrop_url ?? cached.image_url;
-        if (isTmdbPosterImageUrl(image_url)) {
-          let summary = await fetchWikipediaSummary(entry.query);
-          if (!summary)
-            summary = await fetchWikipediaSummary(`${entry.label} (film)`);
-          if (summary?.image_url && !isTmdbPosterImageUrl(summary.image_url)) {
-            image_url = summary.image_url;
-          } else if (needsBackdrop) {
-            image_url = cached.image_url;
+  // 1. Supabase cache (skipped on fast defer — avoids per-question DB round-trips).
+  if (!opts?.deferCache) {
+    let cached = await getCachedQuiz(entry.label, category);
+    if (cached) {
+      // Upgrade movie entries cached before the backdrop/poster/hint split.
+      if (category === "Movie") {
+        const needsBackdrop =
+          !cached.image_url.includes("image.tmdb.org") ||
+          isTmdbPosterImageUrl(cached.image_url);
+        const needsPoster = !cached.poster_url;
+        const needsHint = !cached.hint;
+        if (needsBackdrop || needsPoster || needsHint) {
+          const m = await fetchMovieData(entry.label);
+          let image_url = m.backdrop_url ?? cached.image_url;
+          if (isTmdbPosterImageUrl(image_url)) {
+            let summary = await fetchWikipediaSummary(entry.query);
+            if (!summary)
+              summary = await fetchWikipediaSummary(`${entry.label} (film)`);
+            if (summary?.image_url && !isTmdbPosterImageUrl(summary.image_url)) {
+              image_url = summary.image_url;
+            } else if (needsBackdrop) {
+              image_url = cached.image_url;
+            }
+          }
+          const poster_url = m.poster_url ?? cached.poster_url ?? undefined;
+          const hint = m.hint ?? cached.hint ?? undefined;
+          if (
+            image_url !== cached.image_url ||
+            poster_url !== cached.poster_url ||
+            hint !== cached.hint
+          ) {
+            cached = await saveCachedQuiz({
+              name: cached.name,
+              category: cached.category,
+              image_url,
+              description: cached.description,
+              correct_answer: cached.correct_answer,
+              wrong_answers: cached.wrong_answers,
+              poster_url,
+              hint,
+            });
           }
         }
-        const poster_url = m.poster_url ?? cached.poster_url ?? undefined;
-        const hint = m.hint ?? cached.hint ?? undefined;
-        if (
-          image_url !== cached.image_url ||
-          poster_url !== cached.poster_url ||
-          hint !== cached.hint
-        ) {
-          cached = await saveCachedQuiz({
-            name: cached.name,
-            category: cached.category,
-            image_url,
-            description: cached.description,
-            correct_answer: cached.correct_answer,
-            wrong_answers: cached.wrong_answers,
-            poster_url,
-            hint,
-          });
-        }
       }
+      return buildQuestion({
+        ...cached,
+        wrong_answers: decoysFor(cached.correct_answer),
+      });
     }
-    // Refresh distractors from this session's tier for consistency.
-    return buildQuestion({
-      ...cached,
-      wrong_answers: decoysFor(cached.correct_answer),
-    });
   }
 
   let image_url: string | null = null;
@@ -632,7 +751,11 @@ export async function generateImageQuizBatch(
   }
   const distractors = [...distractorPool];
 
-  // Fast path — serve from cache instantly (no Wikipedia/TMDB round-trips).
+  if (options?.fastStart === true) {
+    return generateFastBatch(category, count, difficulty, exclude, distractors);
+  }
+
+  // Serve from Supabase cache when available.
   const cachedRows = shuffle(await getCachedByCategory(category));
   for (const row of cachedRows) {
     if (results.length >= count) break;
@@ -680,15 +803,13 @@ export async function generateImageQuizBatch(
 
   if (options?.cacheOnly) return results;
 
-  const fastStart = options?.fastStart === true;
-  const concurrency = fastStart ? 10 : 8;
+  const concurrency = 8;
 
   const { entries, distractors: liveDistractors } = await workingEntries(
     category,
     count,
     difficulty,
     exclude,
-    { poolOnly: fastStart },
   );
 
   const pending = entries.filter(
@@ -698,9 +819,7 @@ export async function generateImageQuizBatch(
     const slice = pending.slice(i, i + concurrency);
     const qs = await Promise.all(
       slice.map((e) =>
-        generateForEntry(category, e, liveDistractors, {
-          deferCache: fastStart,
-        }).catch(() => null),
+        generateForEntry(category, e, liveDistractors).catch(() => null),
       ),
     );
     for (const q of qs) {
@@ -714,9 +833,9 @@ export async function generateImageQuizBatch(
     }
   }
 
-  if (results.length >= count || fastStart) return results.slice(0, count);
+  if (results.length >= count) return results.slice(0, count);
 
-  // Slow path — refresh AI pool and retry (skipped on fastStart).
+  // Slow path — refresh AI pool and retry.
   const fresh = await aiCandidates(category, 36, difficulty);
   if (fresh && fresh.length > 0) {
     saveCandidatePool(`${category}|${difficulty}`, fresh);
