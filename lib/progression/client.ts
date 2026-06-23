@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import {
   applyProgressionEvent,
@@ -36,7 +37,15 @@ function readLocalState(): ProgressionState {
   return buildFullProgressionState(loadRawState());
 }
 
+function applyLocalSnapshot(
+  setState: React.Dispatch<React.SetStateAction<ProgressionState>>,
+) {
+  const raw = loadRawState();
+  setState((prev) => ensureUnlocks(buildFullProgressionState(raw), raw));
+}
+
 export function useProgression() {
+  const pathname = usePathname();
   const { isSignedIn, isLoaded: clerkReady } = useUser();
   const [state, setState] = useState<ProgressionState>(readLocalState);
   const [loaded, setLoaded] = useState(() => typeof window !== "undefined");
@@ -82,7 +91,8 @@ export function useProgression() {
           seasonXp: merged.season?.userSeasonXp ?? 0,
           seasonDiscoveries: merged.season?.userSeasonDiscoveries ?? 0,
         });
-        setState(ensureUnlocks(merged, loadRawState()));
+        const raw = loadRawState();
+        setState(ensureUnlocks(merged, raw));
         setLoaded(true);
         return;
       }
@@ -99,10 +109,32 @@ export function useProgression() {
     void refresh();
   }, [clerkReady, refresh]);
 
+  /** Re-read local storage after navigation or when returning to the tab. */
+  useEffect(() => {
+    applyLocalSnapshot(setState);
+  }, [pathname]);
+
+  useEffect(() => {
+    function syncFromStorage() {
+      if (document.visibilityState !== "visible") return;
+      applyLocalSnapshot(setState);
+    }
+
+    window.addEventListener("focus", syncFromStorage);
+    window.addEventListener("pageshow", syncFromStorage);
+    document.addEventListener("visibilitychange", syncFromStorage);
+    return () => {
+      window.removeEventListener("focus", syncFromStorage);
+      window.removeEventListener("pageshow", syncFromStorage);
+      document.removeEventListener("visibilitychange", syncFromStorage);
+    };
+  }, []);
+
   /** Keep all useProgression() hooks in sync after any quiz event. */
   useEffect(() => {
     return onProgressionEvent((result) => {
-      setState(result.state);
+      const raw = loadRawState();
+      setState(ensureUnlocks(result.state, raw));
     });
   }, []);
 
@@ -153,7 +185,7 @@ export function useProgression() {
 
       const raw = loadRawState();
       const result = applyProgressionEvent(raw, payload);
-      setState(result.state);
+      setState(ensureUnlocks(result.state, loadRawState()));
       emit(result);
       return result;
     },
