@@ -81,6 +81,20 @@ export type ExcludedHistory = {
   ids: string[];
 };
 
+/** Curated pool size for every picture-quiz category. */
+export const IMAGE_POOL_SIZE = 12;
+
+/**
+ * Picture games use small fixed pools — rotate stale exclusions before fetch
+ * so every category (celebrity, football, music, etc.) can always start.
+ */
+export function ensurePlayablePool(key: string, needed = 10): void {
+  const { answers } = getExcluded(key);
+  if (answers.length + needed > IMAGE_POOL_SIZE) {
+    rotateExcluded(key);
+  }
+}
+
 export function getExcluded(key: string): ExcludedHistory {
   const bucket = readStore()[key];
   if (!bucket) return { answers: [], images: [], ids: [] };

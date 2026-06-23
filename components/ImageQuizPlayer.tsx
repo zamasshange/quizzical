@@ -11,6 +11,7 @@ import { playClick, useGameSounds, useQuizFinishSound } from "@/lib/sound";
 import { syncContentHistory } from "@/lib/platform/syncContentHistory";
 import {
   getExcluded,
+  ensurePlayablePool,
   playHistoryKey,
   recordSeen,
   rotateExcluded,
@@ -191,6 +192,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       count: QuestionCount,
       historyKey: string,
     ): Promise<SourceQuestion[]> => {
+      ensurePlayablePool(historyKey, count);
       let excluded = getExcluded(historyKey);
       let rows = await fetchQuizRows(level, count, excluded, true);
 
@@ -236,6 +238,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       setLoadProgress("Starting game…");
       const historyKey = playHistoryKey("image", mode.category, level);
       if (rotate) rotateExcluded(historyKey);
+      ensurePlayablePool(historyKey, count);
       const excluded = getExcluded(historyKey);
       const isMovie = mode.category === "Movie";
       const warmKey = `${mode.category}|${level}|${count}|${excluded.answers.length}`;

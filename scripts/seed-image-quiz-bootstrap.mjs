@@ -100,8 +100,8 @@ const POOLS = {
   Music: [
     ["Beyoncé", "Beyoncé"],
     ["Taylor Swift", "Taylor Swift"],
-    ["Drake", "Drake (musician)"],
-    ["Adele", "Adele"],
+    ["Drake", "Drake (rapper)"],
+    ["Adele", "Adele (singer)"],
     ["The Weeknd", "The Weeknd"],
     ["Rihanna", "Rihanna"],
     ["Eminem", "Eminem"],
@@ -223,13 +223,23 @@ async function resolve(category, label, query, tmdbToken) {
 
 async function main() {
   const tmdb = process.env.TMDB_READ_TOKEN ?? "";
-  const out = {};
+  let out = {};
+  try {
+    out = JSON.parse(fs.readFileSync(outFile, "utf8"));
+  } catch {
+    out = {};
+  }
   let ok = 0;
   let fail = 0;
+  let skipped = 0;
 
   for (const [category, entries] of Object.entries(POOLS)) {
     for (const [label, query] of entries) {
       const key = `${category}|${label}`;
+      if (out[key]?.image_url) {
+        skipped++;
+        continue;
+      }
       process.stdout.write(`Resolving ${key}… `);
       try {
         const row = await resolve(category, label, query, tmdb);
@@ -245,12 +255,14 @@ async function main() {
         fail++;
         console.log("error", e?.message ?? e);
       }
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 700));
     }
   }
 
   fs.writeFileSync(outFile, JSON.stringify(out, null, 2), "utf8");
-  console.log(`\nWrote ${ok} entries to ${outFile} (${fail} skipped)`);
+  console.log(
+    `\nWrote ${Object.keys(out).length} total entries to ${outFile} (+${ok} new, ${skipped} kept, ${fail} failed)`,
+  );
 }
 
 main();

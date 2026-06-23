@@ -502,7 +502,14 @@ async function generateFastBatch(
   exclude: ExcludeSet | undefined,
   distractors: string[],
 ): Promise<GeneratedQuestion[]> {
-  const blocked = toExcludeSet(exclude);
+  const poolSize = POOLS[category]?.entries.length ?? 12;
+  let effectiveExclude = exclude;
+  const initialBlocked = toExcludeSet(exclude);
+  if (initialBlocked.answers.size + count > poolSize) {
+    effectiveExclude = { answers: [], images: exclude?.images ?? [] };
+  }
+
+  const blocked = toExcludeSet(effectiveExclude);
   const results = collectBootstrapQuestions(category, count, blocked, distractors);
   if (results.length >= count) return results.slice(0, count);
 

@@ -728,5 +728,115 @@
     "wrong_answers": [],
     "poster_url": null,
     "hint": null
+  },
+  "Cricket|Babar Azam": {
+    "name": "Babar Azam",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Babar_azam_2023.jpg/330px-Babar_azam_2023.jpg",
+    "description": "Pakistani cricketer (born 1994)",
+    "correct_answer": "Babar Azam",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Cricket|Steve Smith": {
+    "name": "Steve Smith",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/STEVE_SMITH_%2811705303043%29.jpg/330px-STEVE_SMITH_%2811705303043%29.jpg",
+    "description": "Australian cricketer (born 1989)",
+    "correct_answer": "Steve Smith",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Cricket|Brian Lara": {
+    "name": "Brian Lara",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/92/Brian_Lara_at_2012_Mumbai_Marathon_pre_bash.jpg",
+    "description": "Trinidadian cricketer (born 1969)",
+    "correct_answer": "Brian Lara",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Cricket|AB de Villiers": {
+    "name": "AB de Villiers",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/AB_de_Villiers_2.jpg/330px-AB_de_Villiers_2.jpg",
+    "description": "AB de Villiers",
+    "correct_answer": "AB de Villiers",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Cricket|Rohit Sharma": {
+    "name": "Rohit Sharma",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Prime_Minister_Of_Bharat_Shri_Narendra_Damodardas_Modi_with_Shri_Rohit_Gurunath_Sharma_%28Cropped%29.jpg/330px-Prime_Minister_Of_Bharat_Shri_Narendra_Damodardas_Modi_with_Shri_Rohit_Gurunath_Sharma_%28Cropped%29.jpg",
+    "description": "Indian cricketer (born 1987)",
+    "correct_answer": "Rohit Sharma",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Cricket|Joe Root": {
+    "name": "Joe Root",
+    "category": "Cricket",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Joe_Root_HIP1487_%28cropped%29.jpg/330px-Joe_Root_HIP1487_%28cropped%29.jpg",
+    "description": "English cricketer (born 1990)",
+    "correct_answer": "Joe Root",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Music|Drake": {
+    "name": "Drake",
+    "category": "Music",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg/330px-Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg",
+    "description": "Canadian rapper and singer (born 1986)",
+    "correct_answer": "Drake",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Music|Adele": {
+    "name": "Adele",
+    "category": "Music",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Adele_2016.jpg/330px-Adele_2016.jpg",
+    "description": "English singer-songwriter (born 1988)",
+    "correct_answer": "Adele",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Music|The Weeknd": {
+    "name": "The Weeknd",
+    "category": "Music",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/The_Weeknd_Portrait_by_Brian_Ziff.jpg/330px-The_Weeknd_Portrait_by_Brian_Ziff.jpg",
+    "description": "Canadian singer-songwriter (born 1990)",
+    "correct_answer": "The Weeknd",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Music|Eminem": {
+    "name": "Eminem",
+    "category": "Music",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Eminem_2021_Color_Corrected.jpg/330px-Eminem_2021_Color_Corrected.jpg",
+    "description": "American rapper (born 1972)",
+    "correct_answer": "Eminem",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
+  },
+  "Music|Bruno Mars": {
+    "name": "Bruno Mars",
+    "category": "Music",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg/330px-BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg",
+    "description": "American singer-songwriter (born 1985)",
+    "correct_answer": "Bruno Mars",
+    "wrong_answers": [],
+    "poster_url": null,
+    "hint": null
   }
 }
