@@ -19,6 +19,7 @@ type CompleteGameInput = {
   correct: number;
   total: number;
   quizCategory?: string;
+  difficulty?: string;
 };
 
 export async function completeGameAndSubmit(
@@ -75,6 +76,7 @@ export async function completeGameAndSubmit(
       type: "quiz_complete",
       quizId: input.quizId,
       quizCategory: input.quizCategory,
+      difficulty: input.difficulty,
       correct: input.correct,
       total: input.total,
     });

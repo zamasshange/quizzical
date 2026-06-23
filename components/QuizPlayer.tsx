@@ -298,6 +298,7 @@ export default function QuizPlayer({
       correct: correctCount,
       total: questions.length,
       quizCategory: quiz.category,
+      difficulty: profile.difficulty,
     });
   }, [
     phase,
@@ -309,6 +310,8 @@ export default function QuizPlayer({
     score,
     correctCount,
     questions.length,
+    quiz.category,
+    profile.difficulty,
   ]);
 
   function applyResume(saved: SavedGameSession) {

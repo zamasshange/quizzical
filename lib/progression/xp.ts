@@ -1,5 +1,7 @@
 /** XP rewards and level curve for Knowledge Explorers. */
 
+export type GameDifficulty = "Easy" | "Medium" | "Hard";
+
 export const XP = {
   correctAnswer: 5,
   quizComplete: 10,
@@ -7,7 +9,6 @@ export const XP = {
   dailyChallenge: 50,
   firstQuizOfDay: 20,
   newDiscovery: 10,
-  hardBonus: 5,
   missionComplete: 30,
 } as const;
 
@@ -19,6 +20,61 @@ export const COINS = {
   streakDay: 5,
   missionComplete: 8,
 } as const;
+
+/** Reward multipliers per difficulty — Easy earns less, Hard earns more. */
+export const DIFFICULTY_REWARD_SCALE: Record<
+  GameDifficulty,
+  { xp: number; coins: number }
+> = {
+  Easy: { xp: 0.65, coins: 0.65 },
+  Medium: { xp: 1, coins: 1 },
+  Hard: { xp: 1.75, coins: 1.75 },
+};
+
+export function normalizeDifficulty(raw?: string): GameDifficulty {
+  if (!raw) return "Medium";
+  const d = raw.trim().toLowerCase();
+  if (d === "easy") return "Easy";
+  if (d === "hard") return "Hard";
+  return "Medium";
+}
+
+export function difficultyRewardScale(difficulty?: string): {
+  xp: number;
+  coins: number;
+} {
+  return DIFFICULTY_REWARD_SCALE[normalizeDifficulty(difficulty)];
+}
+
+export function scaledXp(base: number, difficulty?: string): number {
+  if (base <= 0) return 0;
+  const { xp } = difficultyRewardScale(difficulty);
+  return Math.max(1, Math.round(base * xp));
+}
+
+export function scaledCoins(base: number, difficulty?: string): number {
+  if (base <= 0) return 0;
+  const { coins } = difficultyRewardScale(difficulty);
+  return Math.max(1, Math.round(base * coins));
+}
+
+/** Shown on difficulty pickers — per-correct and round-complete payouts. */
+export function gameplayRewardsPreview(difficulty?: string) {
+  return {
+    perCorrect: {
+      xp: scaledXp(XP.correctAnswer, difficulty),
+      coins: scaledCoins(COINS.correctAnswer, difficulty),
+    },
+    quizComplete: {
+      xp: scaledXp(XP.quizComplete, difficulty),
+      coins: scaledCoins(COINS.quizComplete, difficulty),
+    },
+    perfectQuiz: {
+      xp: scaledXp(XP.perfectQuiz, difficulty),
+      coins: scaledCoins(COINS.perfectQuiz, difficulty),
+    },
+  };
+}
 
 /** Total XP required to reach a given level (level 1 = 0). */
 export function xpForLevel(level: number): number {

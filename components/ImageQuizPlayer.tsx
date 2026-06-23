@@ -25,6 +25,7 @@ import {
 } from "@/lib/gameProgress";
 import { useCompleteGame } from "@/lib/completeGame";
 import { recordProgressionEvent } from "@/lib/progression/client";
+import { gameplayRewardsPreview } from "@/lib/progression/xp";
 import { prefetchReveal } from "@/lib/revealPrefetch";
 import ContinueGamePrompt from "./ContinueGamePrompt";
 import GameHudControls from "./GameHudControls";
@@ -428,6 +429,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
       correct: correctCount,
       total: questions.length,
       quizCategory: mode.quizCategorySlug ?? "entertainment",
+      difficulty,
     });
   }, [
     phase,
@@ -436,6 +438,7 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
     mode.title,
     mode.emoji,
     mode.category,
+    mode.quizCategorySlug,
     difficulty,
     score,
     correctCount,
@@ -550,7 +553,9 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
           <span className="text-left text-xs font-extrabold uppercase tracking-wide text-ink/45">
             Difficulty
           </span>
-          {DIFFICULTIES.map((d) => (
+          {DIFFICULTIES.map((d) => {
+            const rewards = gameplayRewardsPreview(d);
+            return (
             <button
               key={d}
               type="button"
@@ -572,8 +577,13 @@ export default function ImageQuizPlayer({ mode }: { mode: GameMode }) {
                     ? "well-known"
                     : "deep cuts"}
               </span>
+              <span className="mt-0.5 block text-[10px] font-bold opacity-80">
+                +{rewards.perCorrect.xp} XP · +{rewards.perCorrect.coins} coin
+                {rewards.perCorrect.coins === 1 ? "" : "s"} per correct
+              </span>
             </button>
-          ))}
+            );
+          })}
         </div>
         <QuestionCountPicker
           value={questionCount}

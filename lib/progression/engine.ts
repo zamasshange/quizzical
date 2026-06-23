@@ -23,6 +23,8 @@ import {
   categoryTitle,
   globalTitle,
   levelFromXp,
+  scaledCoins,
+  scaledXp,
   streakBonusXp,
   todayKey,
   xpToNextLevel,
@@ -318,12 +320,10 @@ export function applyProgressionEvent(
   }
 
   if (payload.type === "correct_answer") {
-    xpEarned += XP.correctAnswer;
-    coinsEarned += COINS.correctAnswer;
+    xpEarned += scaledXp(XP.correctAnswer, payload.difficulty);
+    coinsEarned += scaledCoins(COINS.correctAnswer, payload.difficulty);
     raw.stats.totalCorrect += 1;
     raw.stats.totalAnswered += 1;
-
-    if (payload.difficulty === "Hard") xpEarned += XP.hardBonus;
 
     if (payload.quizCategory) {
       const m = raw.mastery[payload.quizCategory] ?? { answered: 0, correct: 0 };
@@ -352,8 +352,8 @@ export function applyProgressionEvent(
         };
         raw.discoveries.unshift(d);
         if (raw.discoveries.length > 2000) raw.discoveries.length = 2000;
-        xpEarned += XP.newDiscovery;
-        coinsEarned += COINS.newDiscovery;
+        xpEarned += scaledXp(XP.newDiscovery, payload.difficulty);
+        coinsEarned += scaledCoins(COINS.newDiscovery, payload.difficulty);
         discovery = { ...d, isNew: true };
         trackMission("learn-5");
       }
@@ -371,8 +371,8 @@ export function applyProgressionEvent(
   }
 
   if (payload.type === "quiz_complete") {
-    xpEarned += XP.quizComplete;
-    coinsEarned += COINS.quizComplete;
+    xpEarned += scaledXp(XP.quizComplete, payload.difficulty);
+    coinsEarned += scaledCoins(COINS.quizComplete, payload.difficulty);
     raw.stats.quizzesCompleted += 1;
     trackMission("complete-3");
 
@@ -384,8 +384,8 @@ export function applyProgressionEvent(
     if (payload.quizCategory === "sports") trackMission("sports-3");
 
     if (payload.correct === payload.total && (payload.total ?? 0) > 0) {
-      xpEarned += XP.perfectQuiz;
-      coinsEarned += COINS.perfectQuiz;
+      xpEarned += scaledXp(XP.perfectQuiz, payload.difficulty);
+      coinsEarned += scaledCoins(COINS.perfectQuiz, payload.difficulty);
       raw.stats.perfectQuizzes += 1;
     }
   }
