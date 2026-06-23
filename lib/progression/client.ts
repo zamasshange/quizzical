@@ -39,7 +39,7 @@ function readLocalState(): ProgressionState {
 export function useProgression() {
   const { isSignedIn, isLoaded: clerkReady } = useUser();
   const [state, setState] = useState<ProgressionState>(readLocalState);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => typeof window !== "undefined");
 
   const refresh = useCallback(async () => {
     const localRaw = loadRawState();

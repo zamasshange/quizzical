@@ -12,15 +12,7 @@ type Props = {
 
 /** Blocks gameplay when content is locked; shows requirements. */
 export default function UnlockGate({ href, children, preview }: Props) {
-  const { unlock, locked, loaded } = useUnlockForHref(href);
-
-  if (!loaded) {
-    return (
-      <div className="py-12 text-center text-sm font-bold text-ink/50">
-        Loading progression…
-      </div>
-    );
-  }
+  const { unlock, locked } = useUnlockForHref(href);
 
   if (locked && unlock) {
     return (

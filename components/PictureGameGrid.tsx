@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import AppIcon, { type AppIconName } from "@/components/icons/AppIcon";
 import ContainedPhoto from "@/components/media/ContainedPhoto";
 import type { GameMode } from "@/lib/imageQuestions";
-import { fadeUp, sectionViewport, staggerContainer } from "@/lib/motion";
+import { getBootstrapPreviewUrl } from "@/lib/imagePreviewBootstrap";
 import { useUnlockForHref } from "@/lib/progression/unlockClient";
 import LockedContentPreview from "@/components/progression/LockedContentPreview";
 
@@ -38,25 +37,27 @@ async function fetchPreviewUrl(term: string): Promise<string | null> {
   }
 }
 
-function usePreviewImage(terms: string[]) {
-  const [url, setUrl] = useState<string | null>(null);
+function usePreviewImage(mode: GameMode) {
+  const [url, setUrl] = useState<string | null>(() =>
+    getBootstrapPreviewUrl(mode.category, mode.previewTerms),
+  );
 
   useEffect(() => {
+    if (url) return;
     let cancelled = false;
     (async () => {
-      for (const term of terms) {
+      for (const term of mode.previewTerms) {
         const found = await fetchPreviewUrl(term);
         if (found && !cancelled) {
           setUrl(found);
           return;
         }
       }
-      if (!cancelled) setUrl(null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [terms.join("|")]);
+  }, [mode.category, mode.previewTerms, url]);
 
   return url;
 }
@@ -72,13 +73,13 @@ function PictureCard({
   mode: GameMode;
   fill?: boolean;
 }) {
-  const previewUrl = usePreviewImage(mode.previewTerms);
+  const previewUrl = usePreviewImage(mode);
   const icon = MODE_ICONS[mode.slug] ?? "sparkles";
   const label = shortTitle(mode.title);
   const group =
     mode.quizCategorySlug === "sports" ? "Sports" : "Entertainment";
   const href = `/play/${mode.slug}`;
-  const { unlock, locked, loaded } = useUnlockForHref(href);
+  const { unlock, locked } = useUnlockForHref(href);
 
   const widthClass = fill
     ? "group block w-full min-w-0"
@@ -118,14 +119,6 @@ function PictureCard({
     </div>
   );
 
-  if (!loaded) {
-    return (
-      <div className={widthClass}>
-        <div className="relative aspect-[4/5] animate-pulse overflow-hidden rounded-xl border-[2.5px] border-ink/20 bg-ink/10" />
-      </div>
-    );
-  }
-
   if (locked && unlock) {
     return (
       <div className={widthClass}>
@@ -160,9 +153,9 @@ function DesktopGrid({ modes }: { modes: GameMode[] }) {
   return (
     <div className="hidden gap-3 md:grid md:grid-cols-7">
       {modes.map((mode) => (
-        <motion.div key={mode.slug} variants={fadeUp} className="min-w-0">
+        <div key={mode.slug} className="min-w-0">
           <PictureCard mode={mode} fill />
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -189,30 +182,16 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
 
   if (variant === "compact") {
     return (
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        whileInView="visible"
-        viewport={sectionViewport}
-      >
+      <>
         <MobileFilmStrip modes={ordered} />
         <DesktopGrid modes={ordered} />
-      </motion.div>
+      </>
     );
   }
 
   return (
-    <motion.section
-      initial="hidden"
-      whileInView="visible"
-      viewport={sectionViewport}
-      variants={staggerContainer}
-      className="relative"
-    >
-      <motion.div
-        variants={fadeUp}
-        className="mb-2 flex items-baseline justify-between gap-2 md:mb-3"
-      >
+    <section className="relative">
+      <div className="mb-2 flex items-baseline justify-between gap-2 md:mb-3">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-grass md:text-xs">
             Picture quizzes
@@ -224,12 +203,12 @@ export default function PictureGameGrid({ modes, variant = "home" }: Props) {
         <span className="shrink-0 text-xs font-extrabold text-ink/30 md:hidden">
           Scroll →
         </span>
-      </motion.div>
+      </div>
 
-      <motion.div variants={fadeUp}>
+      <div>
         <MobileFilmStrip modes={ordered} />
         <DesktopGrid modes={ordered} />
-      </motion.div>
-    </motion.section>
+      </div>
+    </section>
   );
 }
