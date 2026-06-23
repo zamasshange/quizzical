@@ -6,8 +6,10 @@ import {
   applyProgressionEvent,
   getDefaultProgressionState,
   loadRawState,
+  saveRawState,
 } from "./engine";
 import { buildFullProgressionState } from "./buildState";
+import { ensureUnlocks, syncProgressionState } from "./syncState";
 import type {
   ProgressionEventPayload,
   ProgressionEventResult,
@@ -27,34 +29,75 @@ function emit(result: ProgressionEventResult) {
   listeners.forEach((fn) => fn(result));
 }
 
+function readLocalState(): ProgressionState {
+  if (typeof window === "undefined") {
+    return getDefaultProgressionState(detectCountryCode());
+  }
+  return buildFullProgressionState(loadRawState());
+}
+
 export function useProgression() {
-  const { isSignedIn } = useUser();
-  const [state, setState] = useState<ProgressionState>(() =>
-    getDefaultProgressionState(detectCountryCode()),
-  );
+  const { isSignedIn, isLoaded: clerkReady } = useUser();
+  const [state, setState] = useState<ProgressionState>(readLocalState);
   const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (isSignedIn) {
-      try {
-        const res = await fetch("/api/progression");
-        if (res.ok) {
-          const data = (await res.json()) as ProgressionState;
-          setState(data);
-          setLoaded(true);
-          return;
-        }
-      } catch {
-        /* fall through */
-      }
+    const localRaw = loadRawState();
+    const localState = buildFullProgressionState(localRaw);
+
+    if (!isSignedIn) {
+      setState(localState);
+      setLoaded(true);
+      return;
     }
-    setState(buildFullProgressionState(loadRawState()));
+
+    try {
+      const res = await fetch("/api/progression");
+      if (res.ok) {
+        const data = (await res.json()) as ProgressionState;
+        const merged = syncProgressionState(data, localRaw);
+        saveRawState({
+          ...localRaw,
+          xp: merged.xp,
+          coins: merged.coins,
+          currentStreak: merged.currentStreak,
+          longestStreak: merged.longestStreak,
+          countryCode: merged.countryCode,
+          discoveries: merged.discoveries,
+          mastery: Object.fromEntries(
+            merged.mastery.map((m) => [m.slug, { answered: m.answered, correct: m.correct }]),
+          ),
+          unlockedAchievements: merged.achievements
+            .filter((a) => a.unlocked)
+            .map((a) => a.id),
+          unlockedBadges: merged.badges.map((b) => b.id),
+          missions: merged.missions,
+          stats: merged.stats,
+          unlockedItems: merged.unlockedItemIds ?? [],
+          kingdomId: merged.kingdom?.id ?? null,
+          loginStreak: merged.loginStreak ?? localRaw.loginStreak,
+          isLegend: merged.legend?.isLegend ?? false,
+          legendNumber: merged.legend?.legendNumber,
+          crownedAt: merged.legend?.crownedAt,
+          seasonXp: merged.season?.userSeasonXp ?? 0,
+          seasonDiscoveries: merged.season?.userSeasonDiscoveries ?? 0,
+        });
+        setState(ensureUnlocks(merged, loadRawState()));
+        setLoaded(true);
+        return;
+      }
+    } catch {
+      /* fall through to local */
+    }
+
+    setState(localState);
     setLoaded(true);
   }, [isSignedIn]);
 
   useEffect(() => {
+    if (!clerkReady) return;
     void refresh();
-  }, [refresh]);
+  }, [clerkReady, refresh]);
 
   const recordEvent = useCallback(
     async (payload: ProgressionEventPayload): Promise<ProgressionEventResult> => {
@@ -67,7 +110,32 @@ export function useProgression() {
           });
           if (res.ok) {
             const result = (await res.json()) as ProgressionEventResult;
-            setState(result.state);
+            const raw = loadRawState();
+            saveRawState({
+              ...raw,
+              xp: result.state.xp,
+              coins: result.state.coins,
+              currentStreak: result.state.currentStreak,
+              longestStreak: result.state.longestStreak,
+              discoveries: result.state.discoveries,
+              mastery: Object.fromEntries(
+                result.state.mastery.map((m) => [
+                  m.slug,
+                  { answered: m.answered, correct: m.correct },
+                ]),
+              ),
+              unlockedAchievements: result.state.achievements
+                .filter((a) => a.unlocked)
+                .map((a) => a.id),
+              unlockedBadges: result.state.badges.map((b) => b.id),
+              missions: result.state.missions,
+              stats: result.state.stats,
+              unlockedItems: result.state.unlockedItemIds ?? raw.unlockedItems,
+              seasonXp: result.state.season?.userSeasonXp ?? raw.seasonXp,
+              seasonDiscoveries:
+                result.state.season?.userSeasonDiscoveries ?? raw.seasonDiscoveries,
+            });
+            setState(ensureUnlocks(result.state, loadRawState()));
             emit(result);
             return result;
           }
@@ -89,7 +157,7 @@ export function useProgression() {
     setState((prev) => ({ ...prev, countryCode }));
   }, []);
 
-  return { state, loaded, refresh, recordEvent, setCountryCode };
+  return { state, loaded, clerkReady, refresh, recordEvent, setCountryCode };
 }
 
 export async function recordProgressionEvent(

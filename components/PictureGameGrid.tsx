@@ -78,42 +78,34 @@ function PictureCard({
   const group =
     mode.quizCategorySlug === "sports" ? "Sports" : "Entertainment";
   const href = `/play/${mode.slug}`;
-  const { unlock, locked } = useUnlockForHref(href);
+  const { unlock, locked, loaded } = useUnlockForHref(href);
 
-  const card = (
-    <Link
-      href={href}
-      className={
-        fill
-          ? "group block w-full min-w-0"
-          : "group block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem]"
-      }
-    >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
-        {locked && (
-          <span className="absolute right-1.5 top-1.5 z-30 rounded-full border-2 border-ink bg-white px-1.5 py-0.5 text-[9px] font-extrabold">
-            🔒 Lv.{unlock?.requirements.find((r) => r.label.startsWith("Reach"))?.required ?? "?"}
-          </span>
-        )}
-        {previewUrl ? (
-          <ContainedPhoto
-            src={previewUrl}
-            alt={`${mode.title} preview`}
-            className="absolute inset-0 h-full w-full"
-          />
-        ) : (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: mode.color }}
-          >
-            <AppIcon name={icon} size={24} className="text-white/90" />
-          </div>
-        )}
+  const widthClass = fill
+    ? "group block w-full min-w-0"
+    : "group block w-[8.75rem] shrink-0 snap-start sm:w-[9.5rem]";
 
-        <span className="absolute left-1.5 top-1.5 z-20 rounded-full border border-white/20 bg-black/45 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white backdrop-blur-sm">
-          {group}
-        </span>
+  const cardInner = (
+    <div className="relative aspect-[4/5] overflow-hidden rounded-xl border-[2.5px] border-ink bg-ink shadow-[0_3px_0_0_#0d0d0d] transition-transform group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_0_#0d0d0d]">
+      {previewUrl ? (
+        <ContainedPhoto
+          src={previewUrl}
+          alt={`${mode.title} preview`}
+          className="absolute inset-0 h-full w-full"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ backgroundColor: mode.color }}
+        >
+          <AppIcon name={icon} size={24} className="text-white/90" />
+        </div>
+      )}
 
+      <span className="absolute left-1.5 top-1.5 z-20 rounded-full border border-white/20 bg-black/45 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white backdrop-blur-sm">
+        {group}
+      </span>
+
+      {!locked && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-ink via-ink/70 to-transparent px-2 pb-2 pt-10">
           <h3 className="font-display text-xs font-black leading-tight text-white sm:text-sm">
             {label}
@@ -122,15 +114,33 @@ function PictureCard({
             Play →
           </span>
         </div>
-      </div>
-    </Link>
+      )}
+    </div>
   );
 
-  if (locked && unlock) {
-    return <LockedContentPreview unlock={unlock}>{card}</LockedContentPreview>;
+  if (!loaded) {
+    return (
+      <div className={widthClass}>
+        <div className="relative aspect-[4/5] animate-pulse overflow-hidden rounded-xl border-[2.5px] border-ink/20 bg-ink/10" />
+      </div>
+    );
   }
 
-  return card;
+  if (locked && unlock) {
+    return (
+      <div className={widthClass}>
+        <LockedContentPreview unlock={unlock} variant="card">
+          {cardInner}
+        </LockedContentPreview>
+      </div>
+    );
+  }
+
+  return (
+    <Link href={href} className={widthClass}>
+      {cardInner}
+    </Link>
+  );
 }
 
 function MobileFilmStrip({ modes }: { modes: GameMode[] }) {
