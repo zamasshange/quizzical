@@ -77,6 +77,7 @@ const isOnboardingBypass = createRouteMatcher([
   "/play(.*)",
   "/ai(.*)",
   "/profile",
+  "/account",
   "/leaderboard",
   "/knowledge-book",
   "/achievements",

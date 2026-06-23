@@ -87,6 +87,14 @@ export default function ProfileClient() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isSignedIn && (
+            <Link
+              href="/account"
+              className="rounded-full border-4 border-ink bg-white px-4 py-2 text-sm font-extrabold shadow-[0_3px_0_0_#0d0d0d]"
+            >
+              ⚙️ Manage account
+            </Link>
+          )}
           <Link
             href="/knowledge-book"
             className="rounded-full border-4 border-ink bg-white px-4 py-2 text-sm font-extrabold shadow-[0_3px_0_0_#0d0d0d]"
@@ -190,7 +198,15 @@ export default function ProfileClient() {
 
           {isSignedIn && (
             <section>
-              <h2 className="mb-2 text-lg font-black">Represent your country</h2>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-black">Represent your country</h2>
+                <Link
+                  href="/account"
+                  className="text-sm font-extrabold text-grass hover:underline"
+                >
+                  Edit in account settings →
+                </Link>
+              </div>
               <p className="mb-3 text-sm font-semibold text-ink/50">
                 Pick your flag — it shows on your profile and the country leaderboard.
               </p>
