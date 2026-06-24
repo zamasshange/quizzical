@@ -6,6 +6,7 @@ import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 import { BASE_KEYWORDS, BRAND_KEYWORDS } from "@/lib/seoKeywords";
 import { AtmosphereProvider } from "@/lib/atmosphere/context";
 import ProgressionLayer from "@/components/ProgressionLayer";
+import { Analytics } from "@vercel/analytics/next";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -79,6 +80,7 @@ export default function RootLayout({
             <ProgressionLayer />
           </AtmosphereProvider>
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
